@@ -8,7 +8,7 @@ const schema = new Schema({
         default: false
     },
     default: String,
-    enum: String,
+    enum: [String],
     ref: String,
     trim: {
         type: Boolean,
