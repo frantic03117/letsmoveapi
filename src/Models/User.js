@@ -71,10 +71,18 @@ const schema = new Schema({
         default: null,
         // select: false
     },
-    clinic: {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        default: null
+    nhip: {
+        type: Number
+    },
+    island: String,
+    fitness_level: String,
+    diet: String,
+    goal: String,
+    weight: {
+        type: Number
+    },
+    height: {
+        type: Number
     },
     mode: {
         type: [String]
