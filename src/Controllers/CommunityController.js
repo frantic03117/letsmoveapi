@@ -3,6 +3,9 @@ const { validationResult } = require("express-validator");
 const path = require("path");
 const fs = require("fs");
 const Community = require("../Models/Community");
+const CommunityLike = require("../Models/CommunityLike");
+const CommunityComment = require("../Models/CommunityComment");
+const CommunityShare = require("../Models/CommunityShare");
 
 // Create new community post
 exports.createCommunity = async (req, res) => {
@@ -170,23 +173,157 @@ exports.getAllCommunities = async (req, res) => {
         }
 
         const total = await Community.countDocuments(query);
-        const data = await Community.find(query)
+
+        const communities = await Community.find(query)
             .sort({ [sort]: order === "asc" ? 1 : -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit))
-            .populate("author", "name email")
-            .populate("category", "name");
+            .populate("author", "name email avatar")
+            .populate("category", "name")
+            .lean(); // make lean to modify freely
+
+        // 🔁 Enrich each community with engagement info
+        for (const c of communities) {
+            const [comments, likes, shares] = await Promise.all([
+                // first 10 comments
+                CommunityComment.find({ community: c._id, parent_comment: null })
+                    .populate("user", "name email avatar")
+                    .sort({ createdAt: 1 })
+                    .limit(10)
+                    .lean(),
+
+                // last 10 likes
+                CommunityLike.find({ community: c._id })
+                    .populate("user", "name email avatar")
+                    .sort({ createdAt: -1 })
+                    .limit(10)
+                    .lean(),
+
+                // last 10 shares
+                CommunityShare.find({ community: c._id })
+                    .populate("user", "name email avatar")
+                    .sort({ createdAt: -1 })
+                    .limit(10)
+                    .lean(),
+            ]);
+
+            c.comments_preview = comments.map((com) => ({
+                user: com.user,
+                content: com.content,
+                commentedAt: com.createdAt,
+            }));
+
+            c.likes_preview = likes.map((like) => ({
+                user: like.user,
+                likedAt: like.createdAt,
+            }));
+
+            c.shares_preview = shares.map((share) => ({
+                user: share.user,
+                caption: share.caption,
+                sharedAt: share.createdAt,
+            }));
+        }
+
         return res.status(200).json({
             success: 1,
             total,
             page: parseInt(page),
             pages: Math.ceil(total / limit),
-            data,
+            data: communities,
         });
     } catch (err) {
+        console.error(err);
         return res.status(500).json({
             success: 0,
             message: err.message,
         });
+    }
+};
+exports.toggleLike = async (req, res) => {
+    try {
+        const { id } = req.params; // community ID
+        const userId = req.user._id;
+
+        const existing = await CommunityLike.findOne({ community: id, user: userId });
+
+        if (existing) {
+            await CommunityLike.deleteOne({ _id: existing._id });
+            await Community.findByIdAndUpdate(id, { $inc: { likes_count: -1 } });
+            return res.json({ success: 1, message: "💔 Unliked" });
+        }
+
+        await CommunityLike.create({ community: id, user: userId });
+        await Community.findByIdAndUpdate(id, { $inc: { likes_count: 1 } });
+
+        return res.json({ success: 1, message: "❤️ Liked" });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+};
+exports.addComment = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+
+        const { id } = req.params; // community ID
+        const { content, parent_comment } = req.body;
+
+        const comment = await CommunityComment.create({
+            community: id,
+            user: req.user._id,
+            parent_comment: parent_comment || null,
+            content,
+        });
+
+        await Community.findByIdAndUpdate(id, { $inc: { comments_count: 1 } });
+
+        return res.status(201).json({ success: 1, data: comment });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+};
+exports.getComments = async (req, res) => {
+    try {
+        const { id } = req.params; // community ID
+
+        const comments = await CommunityComment.find({
+            community: id,
+            parent_comment: null,
+        })
+            .populate("user", "name")
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Fetch replies for each comment
+        for (let comment of comments) {
+            comment.replies = await CommunityComment.find({ parent_comment: comment._id })
+                .populate("user", "name")
+                .sort({ createdAt: 1 })
+                .lean();
+        }
+
+        return res.json({ success: 1, data: comments });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+};
+exports.shareCommunity = async (req, res) => {
+    try {
+        const { id } = req.params; // community ID
+        const { caption } = req.body;
+        const userId = req.user._id;
+
+        const existing = await CommunityShare.findOne({ community: id, user: userId });
+        if (existing) {
+            return res.status(400).json({ success: 0, message: "Already shared this post" });
+        }
+
+        await CommunityShare.create({ community: id, user: userId, caption });
+        await Community.findByIdAndUpdate(id, { $inc: { shares_count: 1 } });
+
+        return res.status(201).json({ success: 1, message: " Shared successfully" });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
     }
 };
