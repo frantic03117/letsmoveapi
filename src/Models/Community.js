@@ -26,6 +26,7 @@ const schema = new Schema({
     likes_count: { type: Number, default: 0 },
     comments_count: { type: Number, default: 0 },
     shares_count: { type: Number, default: 0 },
+    members_count: { type: Number, default: 0 },
     visibility: {
         type: String,
         enum: ["public", "private", "followers"],
