@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config()
 const cors = require('cors');
-const mongourl = "mongodb+srv://franticnoida2016:franticnoida2016@cluster0.9n1kpyn.mongodb.net/refreshapp";
+const mongourl = "mongodb+srv://franticnoida2016:franticnoida2016@cluster0.9n1kpyn.mongodb.net/letsmove";
 mongoose.connect(mongourl);
 const database = mongoose.connection;
 database.on('error', (error) => {
@@ -22,9 +22,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
 app.get('/', (req, res) => res.send('Lets Move api started successfully.'));
 const mroutes = require('./routes/matadataRoutes');
-const bannerRoutes = require('./routes/bannerRoutes')
+const bannerRoutes = require('./routes/bannerRoutes');
+const userroutes = require('./routes/user.routes');
+const settingRouts = require('./routes/SettingRoutes');
+const comRoute = require('./routes/community.routes');
 app.use('/api/v1/matadata', mroutes);
 app.use('/api/v1/banner', bannerRoutes);
+app.use('/api/v1/user', userroutes);
+app.use('/api/v1/setting', settingRouts);
+app.use('/api/v1/community', comRoute);
+
 server.listen(port, () => {
     console.log(`Lets Move api Server running at https://localhost:${port}`);
 });

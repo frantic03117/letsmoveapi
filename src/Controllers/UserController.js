@@ -25,15 +25,21 @@ const OtpModel = require('../Models/Otp');
 exports.send_otp = async (req, res) => {
     try {
         const mobile = req.body.mobile;
+        const country_code = req.body.country_code;
         if (!mobile) {
             return res.json({ success: 0, errors: "Mobile is invalid", data: null })
         }
-        const checkmobile = await User.findOne({ mobile: mobile });
+        if (!country_code) {
+            return res.json({ success: 0, errors: "country code is invalid", data: null })
+        }
+        const checkmobile = await User.findOne({ country_code: country_code, mobile: mobile });
+
         if (checkmobile) {
             if (['Admin'].includes(checkmobile.role)) {
                 return res.json({
                     errors: [{ 'message': 'Otp login  available to Users only' }],
                     success: 0,
+                    checkmobile,
                     data: [],
                     message: 'Otp login  available to Users only'
                 })
@@ -43,8 +49,8 @@ exports.send_otp = async (req, res) => {
             }
         }
         const otp = ['8888888888', '9999999999'].includes(mobile.toString()) ? '8888' : Math.floor(1000 + Math.random() * 9000);
-        await OtpModel.deleteMany({ mobile: mobile });
-        const item = await OtpModel.create({ mobile: mobile, otp: otp });
+        await OtpModel.deleteMany({ country_code: country_code, mobile: mobile });
+        const item = await OtpModel.create({ country_code: country_code, mobile: mobile, otp: otp });
         // send_otp_mobile(mobile, otp)
         return res.json({
             errors: [],
@@ -64,17 +70,17 @@ exports.send_otp = async (req, res) => {
 }
 exports.verify_otp = async (req, res) => {
     try {
-        const { mobile, otp } = req.body;
-        const fields = ['mobile', 'otp'];
+        const { country_code, mobile, otp } = req.body;
+        const fields = ['mobile', 'otp', 'country_code'];
         const emptyFields = fields.filter(field => !req.body[field]);
         if (emptyFields.length > 0) {
             return res.json({ success: 0, errors: 'The following fields are required:', fields: emptyFields });
         }
-        const item = await OtpModel.findOne({ mobile: mobile, otp: otp, is_verified: false });
+        const item = await OtpModel.findOne({ country_code, mobile: mobile, otp: otp, is_verified: false });
         if (item) {
-            await OtpModel.updateOne({ mobile: mobile }, { $set: { is_verified: true } });
+            await OtpModel.updateOne({ country_code, mobile: mobile }, { $set: { is_verified: true } });
             let token = "";
-            const userExists = await User.findOne({ mobile: mobile });
+            const userExists = await User.findOne({ country_code, mobile: mobile });
             if (userExists) {
                 if (userExists?.is_deleted) {
                     return res.json({ data: [], success: 0, message: 'Account deleted' })
@@ -462,7 +468,7 @@ exports.user_list = async (req, res) => {
 };
 exports.store_profile = async (req, res) => {
     try {
-        const requiredFields = ['mobile', 'name'];
+        const requiredFields = ['country_code', 'mobile', 'first_name'];
         const emptyFields = requiredFields.filter(field => !req.body[field]);
         if (emptyFields.length > 0) {
             return res.json({
@@ -471,14 +477,17 @@ exports.store_profile = async (req, res) => {
                 fields: emptyFields
             });
         }
-        const { name, email, mobile, role = "User" } = req.body;
-        if (req.body.city) {
-            slug = `${role}-${slug}-in-${req.body.city}`;
+        const { first_name, email, country_code, mobile, role = "User" } = req.body;
+        const isOtpVerified = await OtpModel.findOne({ country_code, mobile, is_verified: true });
+        if (!isOtpVerified) {
+            return res.json({
+                errors: [{ message: "Mobile Number is not verified" }],
+                success: 0,
+                data: [],
+                message: "Mobile Number is not verified. Please verify first."
+            });
         }
-        if (mobile.toString().length !== 10) {
-            return res.json({ success: 0, message: "Mobile is not valid" });
-        }
-        const isMobileExists = await User.findOne({ mobile });
+        const isMobileExists = await User.findOne({ country_code, mobile });
         if (isMobileExists) {
             return res.json({
                 errors: [{ message: "Mobile is already in use" }],
@@ -490,13 +499,14 @@ exports.store_profile = async (req, res) => {
 
         const lastRequest = await User.findOne({ role }).sort({ request_id: -1 });
         const new_request_id = lastRequest ? lastRequest.request_id + 1 : 1;
-        const prefix = role === "User" ? 'USER' : 'DOCTOR';
+        const prefix = role === "User" ? 'USER' : 'LETSMOVE';
         const data = {
             ...req.body,
 
             request_id: new_request_id,
             custom_request_id: prefix + String(new_request_id).padStart(10, '0'),
-            name,
+            first_name,
+            country_code,
             mobile,
             role,
             mode: req.body.mode ? JSON.parse(req.body.mode) : null

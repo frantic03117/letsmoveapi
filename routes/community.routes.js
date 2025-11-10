@@ -1,15 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const { body } = require("express-validator");
-const {
-    toggleLike,
-    addComment,
-    getComments,
-    shareCommunity,
-} = require("../controllers/communitySocial.controller");
 
+const { getAllCommunities, createCommunity, updateCommunity, deleteCommunity, addComment, getComments, shareCommunity, toggleLike } = require("../src/Controllers/CommunityController");
+const Store = require("../src/middleware/Store");
+const { Auth } = require("../src/middleware/Auth");
+
+router.get('/', getAllCommunities);
+router.post('/', Store("any").any(), createCommunity);
+router.put('/update/:id', updateCommunity);
+router.delete('/delete/:id', deleteCommunity);
 // Like/Unlike
-router.post("/:id/like", toggleLike);
+router.post("/:id/like", Auth, toggleLike);
 
 // Comment
 router.post(

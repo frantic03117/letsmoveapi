@@ -6,27 +6,37 @@ const Community = require("../Models/Community");
 const CommunityLike = require("../Models/CommunityLike");
 const CommunityComment = require("../Models/CommunityComment");
 const CommunityShare = require("../Models/CommunityShare");
+const CommunityJoin = require("../Models/CommunityJoin");
 
 // Create new community post
 exports.createCommunity = async (req, res) => {
     try {
-        // --- Validate incoming fields ---
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            // Delete uploaded files if validation fails
-            if (req.files?.length) {
-                req.files.forEach((file) => fs.unlinkSync(file.path));
-            }
-            return res.status(400).json({ errors: errors.array() });
+        const requiredFields = ["title", "short_description", "category"];
+        const emptyFields = requiredFields.filter((field) => !req.body[field]);
+        if (emptyFields.length > 0) {
+            return res.json({
+                success: 0,
+                message:
+                    "The following fields are required: " + emptyFields.join(", "),
+                fields: emptyFields,
+            });
         }
 
         const { title, short_description, description, category } = req.body;
 
         // --- Map uploaded files ---
-        const files = (req.files || []).map((file) => ({
+        // Handle case where multiple descriptions come as array or single string
+        let descriptions = req.body.descriptions || [];
+        if (!Array.isArray(descriptions)) descriptions = [descriptions];
+
+        const files = (req.files || []).map((file, i) => ({
             url: `/uploads/${file.filename}`,
-            description: req.body[`file_description_${file.originalname}`] || "", // optional caption per file
-            type: file.mimetype.startsWith("video") ? "video" : "image",
+            description: descriptions[i] || "",
+            type: file.mimetype.startsWith("video")
+                ? "video"
+                : file.mimetype.startsWith("audio")
+                    ? "audio"
+                    : "image",
             metadata: {
                 size: file.size,
                 format: path.extname(file.originalname).slice(1),
@@ -47,11 +57,10 @@ exports.createCommunity = async (req, res) => {
 
         return res.status(201).json({
             success: 1,
-            message: "✅ Community post created successfully!",
+            message: " Community post created successfully!",
             data: post,
         });
     } catch (error) {
-
         return res.status(500).json({
             success: 0,
             message: error.message,
@@ -159,11 +168,9 @@ exports.getAllCommunities = async (req, res) => {
         } = req.query;
 
         const query = {};
-
         if (category) query.category = category;
         if (author) query.author = author;
         if (visibility) query.visibility = visibility;
-
         if (search) {
             query.$or = [
                 { title: new RegExp(search, "i") },
@@ -178,31 +185,35 @@ exports.getAllCommunities = async (req, res) => {
             .sort({ [sort]: order === "asc" ? 1 : -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit))
-            .populate("author", "name email avatar")
-            .populate("category", "name")
+            .populate("author", "first_name profile_image email",)
+            .populate("category")
             .lean(); // make lean to modify freely
 
-        // 🔁 Enrich each community with engagement info
+
         for (const c of communities) {
-            const [comments, likes, shares] = await Promise.all([
+            const [comments, likes, shares, members] = await Promise.all([
                 // first 10 comments
                 CommunityComment.find({ community: c._id, parent_comment: null })
-                    .populate("user", "name email avatar")
+                    .populate("user", "first_name profile_image email")
                     .sort({ createdAt: 1 })
                     .limit(10)
                     .lean(),
 
                 // last 10 likes
                 CommunityLike.find({ community: c._id })
-                    .populate("user", "name email avatar")
+                    .populate("user", "first_name profile_image email")
                     .sort({ createdAt: -1 })
                     .limit(10)
                     .lean(),
 
                 // last 10 shares
                 CommunityShare.find({ community: c._id })
-                    .populate("user", "name email avatar")
+                    .populate("user", "first_name profile_image email")
                     .sort({ createdAt: -1 })
+                    .limit(10)
+                    .lean(),
+                // last 10 members
+                CommunityJoin.find({ community: c._id }).populate("user", "first_name profile_image email").sort({ createdAt: -1 })
                     .limit(10)
                     .lean(),
             ]);
@@ -223,6 +234,7 @@ exports.getAllCommunities = async (req, res) => {
                 caption: share.caption,
                 sharedAt: share.createdAt,
             }));
+            c.members_preview = members
         }
 
         return res.status(200).json({
@@ -250,13 +262,13 @@ exports.toggleLike = async (req, res) => {
         if (existing) {
             await CommunityLike.deleteOne({ _id: existing._id });
             await Community.findByIdAndUpdate(id, { $inc: { likes_count: -1 } });
-            return res.json({ success: 1, message: "💔 Unliked" });
+            return res.json({ success: 1, message: "Unliked" });
         }
 
         await CommunityLike.create({ community: id, user: userId });
         await Community.findByIdAndUpdate(id, { $inc: { likes_count: 1 } });
 
-        return res.json({ success: 1, message: "❤️ Liked" });
+        return res.json({ success: 1, message: " Liked" });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }

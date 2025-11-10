@@ -11,9 +11,10 @@ const fileSchema = new Schema({
     },
 });
 const schema = new Schema({
-    category: {
+    category: [{
         type: Schema.Types.ObjectId,
-    },
+        ref: "Setting"
+    }],
     title: String,
     slug: String,
     files: [fileSchema],
@@ -35,7 +36,7 @@ const schema = new Schema({
 
 }, { timestamps: true });
 // --- Auto-generate slug from title if not provided ---
-communitySchema.pre("save", function (next) {
+schema.pre("save", function (next) {
     if (!this.slug && this.title) {
         this.slug = this.title
             .toLowerCase()

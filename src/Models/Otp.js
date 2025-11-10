@@ -6,9 +6,12 @@ const otpschema = new Schema({
         trim: true,
         lowercase: true,
     },
+    country_code: {
+        type: String
+    },
     mobile: {
         type: String,
-        match: [/^\d{10}$/, 'is invalid'],
+        // match: [/^\d{10}$/, 'is invalid'],
         default: null
     },
     otp: {

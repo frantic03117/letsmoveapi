@@ -16,7 +16,12 @@ const schema = new Schema({
         type: String,
         trim: true
     },
-    name: {
+    first_name: {
+        type: String,
+        trim: true,
+        default: null
+    },
+    last_name: {
         type: String,
         trim: true,
         default: null
@@ -24,6 +29,9 @@ const schema = new Schema({
     email: {
         type: String,
         default: null
+    },
+    country_code: {
+        type: String,
     },
     mobile: {
         type: String,
@@ -72,12 +80,16 @@ const schema = new Schema({
         // select: false
     },
     nhip: {
-        type: Number
+        type: String
     },
-    island: String,
+    island: {
+        type: Schema.Types.ObjectId,
+        ref: "Country"
+    },
     fitness_level: String,
     diet: String,
     goal: String,
+    age: Number,
     weight: {
         type: Number
     },
