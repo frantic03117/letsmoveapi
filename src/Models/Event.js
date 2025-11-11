@@ -1,5 +1,14 @@
 const { Schema, model } = require("mongoose");
-
+const fileSchema = new Schema({
+    url: { type: String },
+    type: { type: String, enum: ["image", "video", "gif"], default: "image" },
+    metadata: {
+        size: Number,
+        width: Number,
+        height: Number,
+        format: String,
+    },
+});
 const schema = new Schema({
     category: [{
         type: Schema.Types.ObjectId,
@@ -20,8 +29,8 @@ const schema = new Schema({
         enum: ['Online', 'Offline'],
         default: "Offline"
     },
-    event_start_date: Date,
-    event_end_date: Date,
+    event_start_at: Date,
+    event_end_at: Date,
     min_age_limit: Number,
     seating_arrangement: String,
     kid_friendly: {
@@ -53,6 +62,14 @@ const schema = new Schema({
 
 
 }, { timestamps: true });
-
+schema.pre("save", function (next) {
+    if (!this.slug && this.title) {
+        this.slug = this.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")
+            .replace(/(^-|-$)/g, "");
+    }
+    next();
+});
 
 module.exports = new model('Event', schema);
