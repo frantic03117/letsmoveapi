@@ -57,13 +57,16 @@ exports.leaveCommunity = async (req, res) => {
  */
 exports.getCommunityMembers = async (req, res) => {
     try {
-        const { id } = req.params; // community ID
+        const { id } = req.query; // community ID
         const { page = 1, limit = 20 } = req.query;
+        let fdata = {};
+        if (id) {
+            fdata['community'] = id;
+        }
+        const total = await CommunityJoin.countDocuments(fdata);
 
-        const total = await CommunityJoin.countDocuments({ community: id });
-
-        const members = await CommunityJoin.find({ community: id })
-            .populate("user", "name email avatar")
+        const members = await CommunityJoin.find(fdata)
+            .populate("user", "first_name email profile_image")
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(parseInt(limit))
