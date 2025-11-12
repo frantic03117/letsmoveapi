@@ -1,4 +1,5 @@
 const EventModel = require("../Models/Event");
+const EventJoin = require("../Models/EventJoin");
 
 exports.createEvent = async (req, res) => {
     try {
@@ -83,5 +84,158 @@ exports.getEvents = async (req, res) => {
             success: 0,
             message: err.message || "Internal server error",
         });
+    }
+};
+exports.updateEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: 0, message: "Event ID is required." });
+        }
+        const existingEvent = await EventModel.findById(id);
+        if (!existingEvent) {
+            return res.status(404).json({ success: 0, message: "Event not found." });
+        }
+        const data = { ...req.body };
+        const files = (req.files || []).map(file => ({
+            url: `/uploads/${file.filename}`,
+            type: file.mimetype.startsWith("video")
+                ? "video"
+                : file.mimetype.startsWith("audio")
+                    ? "audio"
+                    : "image",
+            metadata: {
+                size: file.size,
+                format: path.extname(file.originalname).slice(1),
+            },
+        }));
+        if (files.length > 0) {
+            data.files = [...(existingEvent.files || []), ...files];
+        }
+        const updatedEvent = await EventModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
+        return res.status(200).json({
+            success: 1,
+            message: "Event updated successfully!",
+            data: updatedEvent,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: 0,
+            message: err.message || "Internal server error",
+        });
+    }
+};
+exports.deleteEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ success: 0, message: "Event ID is required." });
+        }
+        await EventModel.findByIdAndDelete(id);
+        return res.status(200).json({
+            success: 1,
+            message: "Event deleted successfully!",
+            data: [],
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: 0,
+            message: err.message || "Internal server error",
+        });
+    }
+}
+exports.joinEvent = async (req, res) => {
+    try {
+        const { id } = req.params; // community ID
+        const userId = req.user._id;
+        const exists = await EventJoin.findOne({ event: id, user: userId });
+        if (exists) {
+            return res.status(400).json({ success: 0, message: "Already joined this event" });
+        }
+        const join = await EventJoin.create({ community: id, user: userId });
+        await EventModel.findByIdAndUpdate(id, { $inc: { members_count: 1 } }, { new: true });
+        return res.status(201).json({
+            success: 1,
+            message: "Event  joined successfully",
+            data: join,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: 0,
+            message: err.message || "Internal server error",
+        });
+    }
+}
+exports.leaveEvent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const join = await EventJoin.findOneAndDelete({ event: id, user: userId });
+
+        if (!join) {
+            return res.status(404).json({ success: 0, message: "You are not a member of this community" });
+        }
+
+        await EventModel.findByIdAndUpdate(id, { $inc: { members_count: -1 } });
+
+        return res.status(200).json({
+            success: 1,
+            message: "🚪 Left event successfully",
+        });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+}
+exports.getEventMembers = async (req, res) => {
+    try {
+        const { id } = req.query; // community ID
+        const { page = 1, limit = 20 } = req.query;
+        let fdata = {};
+        if (id) {
+            fdata['event'] = id;
+        }
+        const total = await EventJoin.countDocuments(fdata);
+
+        const members = await EventJoin.find(fdata)
+            .populate("user", "first_name email profile_image")
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .lean();
+
+        return res.status(200).json({
+            success: 1,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / limit),
+            data: members.map((m) => ({
+                user: m.user,
+                role: m.role,
+                joinedAt: m.createdAt,
+            })),
+        });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+};
+exports.checkJoinStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user._id;
+
+        const join = await EventJoin.findOne({ event: id, user: userId });
+
+        return res.status(200).json({
+            success: 1,
+            joined: !!join,
+            role: join?.role || null,
+            joinedAt: join?.createdAt || null,
+        });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
     }
 };

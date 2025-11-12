@@ -1,55 +1,73 @@
-const jwt = require('jsonwebtoken');
-const User = require('../Models/User');
-require('dotenv').config();
+const jwt = require("jsonwebtoken");
+const User = require("../Models/User");
+require("dotenv").config();
 
+const SECRET_KEY = process.env.SECRET_KEY ?? "frantic@letsmove#6200";
 
-const SECRET_KEY = process.env.SECRET_KEY ?? 'frantic@letsmove#6200';
+/**
+ * Middleware for verifying JWT and (optionally) user roles.
+ * @param {...string} allowedRoles - roles that can access this route.
+ */
+function Auth(...allowedRoles) {
+    return async (req, res, next) => {
+        const authorization = req.headers.authorization;
 
-async function Auth(req, res, next) {
-    const authorization = req.headers.authorization;
-
-    if (!authorization) {
-        return res.status(401).json({ message: 'No Authorization Header' });
-    }
-
-    try {
-        // Expect "Bearer <token>"
-        const token = authorization.split('Bearer ')[1];
-        if (!token) {
-            return res.status(401).json({ message: 'Invalid Token Format' });
+        if (!authorization) {
+            return res.status(401).json({ success: 0, message: "No Authorization Header" });
         }
 
-        const decoded = jwt.verify(token, SECRET_KEY);
-        const ruser = decoded.user;
+        try {
+            // Expect "Bearer <token>"
+            const token = authorization.startsWith("Bearer ")
+                ? authorization.split("Bearer ")[1]
+                : null;
 
-        const user = await User.findById(ruser._id);
+            if (!token) {
+                return res.status(401).json({ success: 0, message: "Invalid Token Format" });
+            }
 
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
+            // Decode & verify token
+            const decoded = jwt.verify(token, SECRET_KEY);
+            const ruser = decoded.user;
+            const user = await User.findById(ruser._id);
+
+            if (!user) {
+                return res.status(404).json({ success: 0, message: "User not found" });
+            }
+
+            if (user.is_deleted) {
+                return res.status(403).json({ success: 0, message: "User account deleted" });
+            }
+
+            const normalizedUserRole = (user.role || "").toLowerCase();
+            const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
+
+            // ✅ If specific roles are required
+            if (normalizedAllowedRoles.length > 0 && !normalizedAllowedRoles.includes(normalizedUserRole)) {
+                return res.status(403).json({
+                    success: 0,
+                    message: `Access denied. Role "${user.role}" not permitted.`,
+                });
+            }
+
+
+            req.user = user;
+            next();
+        } catch (error) {
+            if (error instanceof jwt.TokenExpiredError) {
+                return res.status(401).json({ success: 0, message: "Session expired" });
+            }
+            if (error instanceof jwt.JsonWebTokenError) {
+                return res.status(401).json({ success: 0, message: "Invalid token" });
+            }
+
+            return res.status(500).json({
+                success: 0,
+                message: "Internal server error",
+                error: error.message,
+            });
         }
-
-        if (user.is_deleted) {
-            return res.status(403).json({ message: 'User account deleted' });
-        }
-
-        req.user = user;
-        next();
-
-    } catch (error) {
-        if (error instanceof jwt.TokenExpiredError) {
-            return res.status(401).json({ message: 'Session Expired', error: error.message });
-        }
-
-        if (error instanceof jwt.JsonWebTokenError) {
-            return res.status(401).json({ message: 'Invalid Token', error: error.message });
-        }
-
-        // All other unexpected errors
-        return res.status(500).json({
-            message: 'Internal Server Error',
-            error: error.message,
-        });
-    }
+    };
 }
 
 module.exports = { Auth };

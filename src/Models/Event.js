@@ -59,8 +59,6 @@ const schema = new Schema({
         enum: ["public", "private", "followers"],
         default: "public",
     },
-
-
 }, { timestamps: true });
 schema.pre("save", function (next) {
     if (!this.slug && this.title) {
