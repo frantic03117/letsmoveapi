@@ -9,7 +9,7 @@ const { joinCommunity, leaveCommunity, getCommunityMembers, checkJoinStatus } = 
 
 router.get('/', getAllCommunities);
 router.post('/', Auth('Admin', 'Employee', 'SubAdmin'), Store("any").any(), createCommunity);
-router.put('/update/:id', Auth('Admin', 'Employee', 'SubAdmin'), updateCommunity);
+router.put('/update/:id', Auth('Admin', 'Employee', 'SubAdmin'), Store("any").any(), updateCommunity);
 router.delete('/delete/:id', Auth('Admin', 'Employee', 'SubAdmin'), deleteCommunity);
 // Like/Unlike
 router.post("/:id/like", Auth('User'), toggleLike);
@@ -37,7 +37,7 @@ router.post('/:id/leave', Auth('User'), leaveCommunity);
 
 //all members
 
-router.get('/members', Auth('User'), getCommunityMembers);
-router.get('/:id/status', Auth('User'), checkJoinStatus);
+router.get('/members', Auth(), getCommunityMembers);
+router.get('/:id/status', Auth(), checkJoinStatus);
 
 module.exports = router;

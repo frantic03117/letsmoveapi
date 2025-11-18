@@ -10,8 +10,8 @@ const fileSchema = new mongoose.Schema({
     },
 });
 const ChallengeSchema = new mongoose.Schema({
-    title: { type: String, required: true, trim: true },
-    description: { type: String, required: true },
+    title: { type: String, trim: true },
+    description: { type: String },
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Setting"
@@ -22,10 +22,10 @@ const ChallengeSchema = new mongoose.Schema({
         enum: ["reps", "distance", "time", "attendance", "steps", "weight", "percentage", "custom"],
         default: "custom"
     },
-    target_value: { type: Number, required: true },
+    target_value: { type: Number },
     target_units: { type: String, default: "" },
-    start_date: { type: Date, required: true },
-    end_date: { type: Date, required: true },
+    start_date: { type: Date },
+    end_date: { type: Date },
     duration_days: { type: Number },
     scoring_method: {
         type: String,
@@ -46,9 +46,8 @@ const ChallengeSchema = new mongoose.Schema({
     media: [fileSchema],
     is_active: { type: Boolean, default: true },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-    created_at: { type: Date, default: Date.now },
-    updated_at: { type: Date, default: Date.now }
-});
+
+}, { timestamps: true });
 
 // auto calculate duration
 ChallengeSchema.pre("save", function (next) {

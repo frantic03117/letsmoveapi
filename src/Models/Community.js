@@ -20,6 +20,7 @@ const schema = new Schema({
     files: [fileSchema],
     short_description: String,
     description: String,
+    terms: String,
     tags: [{ type: String, trim: true }],
     author: {
         type: Schema.Types.ObjectId,

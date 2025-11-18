@@ -22,7 +22,7 @@ exports.createCommunity = async (req, res) => {
             });
         }
 
-        const { title, short_description, description, category } = req.body;
+        const { title, short_description, description, category, terms } = req.body;
 
         // --- Map uploaded files ---
         // Handle case where multiple descriptions come as array or single string
@@ -51,6 +51,8 @@ exports.createCommunity = async (req, res) => {
             category,
             author: req.user?._id,
             files,
+            terms,
+            tags: req.body.tags
         });
 
         await post.save();
@@ -138,6 +140,8 @@ exports.updateCommunity = async (req, res) => {
         community.short_description = short_description || community.short_description;
         community.description = description || community.description;
         community.category = category || community.category;
+        community.tags = req.body.tags || community.tags;
+        community.terms = req.body.terms || community.terms;
 
         await community.save();
 
@@ -236,12 +240,15 @@ exports.getAllCommunities = async (req, res) => {
             }));
             c.members_preview = members
         }
-
+        const pagination = {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / limit),
+        };
         return res.status(200).json({
             success: 1,
-            total,
-            page: parseInt(page),
-            pages: Math.ceil(total / limit),
+            pagination,
             data: communities,
         });
     } catch (err) {

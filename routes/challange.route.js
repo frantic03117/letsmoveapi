@@ -1,10 +1,18 @@
 const { Router } = require("express");
 const { Auth } = require("../src/middleware/Auth");
 const { createChallenge, updateChallenge, deleteChallenge, getChallenges, joinChallenge, addLog, getLogs, getLeaderboard } = require("../src/Controllers/ChallengeController");
+const Store = require("../src/middleware/Store");
 
 const router = Router();
 // Admin-only actions
-router.post("/", Auth("Admin"), createChallenge);
+router.post("/", Store('any').fields([
+    {
+        name: "banner", maxCount: 1
+    },
+    {
+        name: "media", maxCount: 10
+    }
+]), createChallenge);
 router.put("/:id", Auth("Admin"), updateChallenge);
 router.delete("/:id", Auth("Admin"), deleteChallenge);
 

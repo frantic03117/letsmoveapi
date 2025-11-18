@@ -1,24 +1,23 @@
 // middlewares/validateRequest.js
-import { validationResult } from "express-validator";
+const { validationResult } = require("express-validator");
 
 /**
  * Global validation middleware
  * Handles validation errors from express-validator
  * Works for body, params, and query validations
  */
-export const validateRequest = (req, res, next) => {
+const validateRequest = (req, res, next) => {
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        // Format the errors
+        // Format errors
         const formattedErrors = errors.array().map(err => ({
             field: err.param,
             message: err.msg,
             location: err.location,
         }));
 
-        // Return only the first message (optional, but cleaner)
-        const firstError = formattedErrors[0]?.message;
+        const firstError = formattedErrors[0];
 
         return res.status(400).json({
             success: 0,
@@ -27,9 +26,11 @@ export const validateRequest = (req, res, next) => {
                 field: firstError.field,
                 location: firstError.location,
             },
-            message: firstError,
+            message: firstError.message,
         });
     }
 
     next();
 };
+
+module.exports = { validateRequest };

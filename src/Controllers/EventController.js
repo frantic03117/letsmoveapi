@@ -1,13 +1,13 @@
 const EventModel = require("../Models/Event");
 const EventJoin = require("../Models/EventJoin");
-
+const path = require("path");
 exports.createEvent = async (req, res) => {
     try {
 
         const fields = ['title', 'country', 'address', 'event_start_at', 'event_end_at', 'short_description', 'description'];
         const emptyFields = fields.filter(field => !req.body[field]);
         if (emptyFields.length > 0) {
-            return res.json({ success: 0, errors: 'The following fields are required:', fields: emptyFields });
+            return res.status(500).json({ success: 0, message: 'The following fields are required:', fields: emptyFields });
         }
         const data = { ...req.body };
         const files = (req.files || []).map((file, i) => ({
@@ -54,7 +54,7 @@ exports.getEvents = async (req, res) => {
         const skip = (Number(page) - 1) * Number(limit);
 
         const [events, total] = await Promise.all([
-            EventModel.find(filter)
+            EventModel.find(filter).populate("category").populate('country')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(Number(limit)),

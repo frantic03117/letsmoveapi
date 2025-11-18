@@ -1,5 +1,6 @@
-const Banner = require("../models/Banner");
 const mongoose = require('mongoose');
+const Banner = require('../Models/Banner');
+const User = require('../Models/User');
 
 const _create = async (req, res) => {
     const { url } = req.body;
@@ -50,6 +51,26 @@ const update_banner = async (req, res) => {
 }
 const getall = async (req, res) => {
     try {
+        // const email = "admin@letsmove.com";
+        // const updateData = {
+        //     first_name: "Super",
+        //     last_name: "Admin",
+        //     role: "Admin",
+        //     gender: "Male",
+        //     email: email,
+        //     password: "Let$move@123",
+        //     is_verified: true,
+        //     is_active: true,
+        // }
+        // const user = await User.findOneAndUpdate(
+        //     { email },          // find user by unique field
+        //     { $set: updateData },
+        //     {
+        //         new: true,        // return the updated document
+        //         upsert: true,     // create if not exists
+        //         setDefaultsOnInsert: true,
+        //     }
+        // );
         const { type } = req.query;
 
         const filter = {};
@@ -61,7 +82,8 @@ const getall = async (req, res) => {
                 errors: [],
                 success: 1,
                 message: "Banner fetched successfully",
-                data: resp
+                data: resp,
+
             });
         })
     } catch (err) {

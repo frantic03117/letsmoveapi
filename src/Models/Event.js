@@ -22,11 +22,11 @@ const schema = new Schema({
     address: String,
     country: {
         type: Schema.Types.ObjectId,
+        ref: "Country"
     },
     city: String,
     mode: {
         type: String,
-        enum: ['Online', 'Offline'],
         default: "Offline"
     },
     event_start_at: Date,

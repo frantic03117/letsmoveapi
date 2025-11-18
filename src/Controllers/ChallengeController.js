@@ -7,6 +7,14 @@ const ChallengeParticipant = require("../Models/ChallengeParticipant");
 exports.createChallenge = async (req, res) => {
     try {
         const data = req.body;
+        if (req.files.banner) {
+            data['banner'] = req.files.banner.path;
+        }
+        return res.json({
+            data: data,
+            // banner: req.files?.banner,
+            files: req.files
+        })
         const challenge = await Challenge.create(data);
         return res.status(201).json({ success: 1, message: "Challenge created", data: challenge });
     } catch (err) {

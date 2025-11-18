@@ -29,6 +29,7 @@ function Auth(...allowedRoles) {
             // Decode & verify token
             const decoded = jwt.verify(token, SECRET_KEY);
             const ruser = decoded.user;
+            console.log("Decoded User from Token:", ruser);
             const user = await User.findById(ruser._id);
 
             if (!user) {
