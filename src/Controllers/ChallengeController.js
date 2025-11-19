@@ -39,14 +39,79 @@ exports.createChallenge = async (req, res) => {
 // 📌 UPDATE CHALLENGE
 exports.updateChallenge = async (req, res) => {
     try {
-        const { id } = req.params;
-        const challenge = await Challenge.findByIdAndUpdate(id, req.body, { new: true });
-        if (!challenge) return res.status(404).json({ success: 0, message: "Challenge not found" });
-        return res.json({ success: 1, message: "Challenge updated", data: challenge });
+        const challengeId = req.params.id;
+
+        let data = req.body;
+
+        // Convert weekly_plan if it's sent as JSON string (common in multipart form-data)
+        if (data.weekly_plan && typeof data.weekly_plan === "string") {
+            try {
+                data.weekly_plan = JSON.parse(data.weekly_plan);
+            } catch (e) {
+                return res.json({
+                    success: 0,
+                    message: "Invalid weekly_plan format. Must be valid JSON."
+                });
+            }
+        }
+
+        // ---------------------------
+        // Handle banner upload
+        // ---------------------------
+        if (req.files?.banner) {
+            data.banner = req.files.banner[0].path;
+        }
+
+        // ---------------------------
+        // Handle media upload
+        // ---------------------------
+        if (req.files?.media) {
+            const mediaFiles = req.files.media.map(file => ({
+                url: file.path,
+                type: file.mimetype.split("/")[0], // image, video, gif
+                metadata: {
+                    size: file.size,
+                    format: file.mimetype.split("/")[1]
+                }
+            }));
+
+            // If you want to REPLACE media
+            // data.media = mediaFiles;
+
+            // If you want to APPEND instead of replace:
+            const existing = await Challenge.findById(challengeId);
+            data.media = [...existing.media, ...mediaFiles];
+        }
+
+        // ---------------------------
+        // Update DB
+        // ---------------------------
+        const updated = await Challenge.findByIdAndUpdate(challengeId, data, {
+            new: true,
+            runValidators: true,
+        });
+
+        if (!updated) {
+            return res.status(404).json({
+                success: 0,
+                message: "Challenge not found",
+            });
+        }
+
+        return res.json({
+            success: 1,
+            message: "Challenge updated successfully",
+            data: updated,
+        });
+
     } catch (err) {
-        return res.status(500).json({ success: 0, message: err.message });
+        return res.status(500).json({
+            success: 0,
+            message: err.message,
+        });
     }
 };
+;
 
 // 📌 DELETE CHALLENGE
 exports.deleteChallenge = async (req, res) => {
@@ -64,8 +129,9 @@ exports.deleteChallenge = async (req, res) => {
 // 📌 GET ALL CHALLENGES (with filters)
 exports.getChallenges = async (req, res) => {
     try {
-        const { category, type, page = 1, limit = 10 } = req.query;
+        const { id, category, type, page = 1, limit = 10 } = req.query;
         const query = {};
+        if (id) query['_id'] = id;
         if (category) query.category = category;
         if (type) query.type = type;
 
@@ -94,9 +160,6 @@ exports.getChallenges = async (req, res) => {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
-
-
-
 
 exports.joinChallenge = async (req, res) => {
     try {

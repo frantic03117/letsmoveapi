@@ -13,7 +13,14 @@ router.post("/", Store('any').fields([
         name: "media", maxCount: 10
     }
 ]), createChallenge);
-router.put("/:id", Auth("Admin"), updateChallenge);
+router.put("/update/:id", Auth("Admin"), Store('any').fields([
+    {
+        name: "banner", maxCount: 1
+    },
+    {
+        name: "media", maxCount: 10
+    }
+]), updateChallenge);
 router.delete("/:id", Auth("Admin"), deleteChallenge);
 
 //  Everyone can view challenges
