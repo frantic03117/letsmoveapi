@@ -32,6 +32,7 @@ const faqRoute = require('./routes/faq.routes');
 const challengeRoute = require('./routes/challange.route');
 const adminRoutes = require('./routes/adminAuthRoutes');
 const mealRoutes = require('./routes/mealRoutes');
+const workoutRoutes = require('./routes/workoutRoute');
 app.use('/api/v1/matadata', mroutes);
 app.use('/api/v1/banner', bannerRoutes);
 app.use('/api/v1/user', userroutes);
@@ -43,6 +44,8 @@ app.use('/api/v1/challenge', challengeRoute);
 app.use('/api/v1/faq', faqRoute);
 app.use('/api/v1/letsmove', adminRoutes);
 app.use('/api/v1/meal', mealRoutes);
+app.use('/api/v1/workout', workoutRoutes);
+
 
 server.listen(port, () => {
     console.log(`Lets Move api Server running at https://localhost:${port}`);
