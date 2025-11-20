@@ -4,7 +4,7 @@ const Workout = require("../Models/Workout");
 // CREATE WORKOUT
 exports.createWorkout = async (req, res) => {
     try {
-         const requiredFields = ["title", "description", "category"];
+        const requiredFields = ["title", "description", "category"];
         const emptyFields = requiredFields.filter((field) => !req.body[field]);
         if (emptyFields.length > 0) {
             return res.status(500).json({
@@ -45,8 +45,20 @@ exports.createWorkout = async (req, res) => {
 // GET ALL WORKOUTS
 exports.getWorkouts = async (req, res) => {
     try {
-        const workouts = await Workout.find().populate("category");
-        res.json({ success: 1, data: workouts });
+        const { id, category, type, page = 1, limit = 10 } = req.query;
+        const query = {};
+        if (id) query['_id'] = id;
+        if (category) query.category = category;
+        if (type) query.type = type;
+        const workouts = await Workout.find(query).populate("category");
+        const total = await Workout.countDocuments(query);
+        const pagination = {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / limit),
+        };
+        res.json({ success: 1, data: workouts , pagination: pagination});
     } catch (error) {
         res.status(500).json({ success: 0, error: error.message });
     }
