@@ -3,49 +3,7 @@ const Matadata = require("../models/Matadata");
 const fs = require('fs');
 const path = require('path');
 const Country = require("../Models/Country");
-exports.importMatadata = async (req, res) => {
-    try {
-        process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-        // Fetch data from API
-        const response = await fetch('https://localhost:7887/api/v1/setting/matadata', {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        });
 
-        if (!response.ok) {
-            throw new Error(`Failed to fetch metadata: ${response.statusText}`);
-        }
-        const data = await response.json();
-        // return res.json({ data: data.data })
-
-
-        const items = data.data;
-
-        let importedCount = 0;
-
-        // Upsert (update if exists, insert if not)
-        for (const item of items) {
-            await Matadata.updateOne(
-                { _id: item._id }, // match by _id from API
-                { $set: item },    // update fields
-                { upsert: true }   // create if not exists
-            );
-            importedCount++;
-        }
-
-        res.status(200).json({
-            success: true,
-            message: `Metadata import completed. ${importedCount} record(s) processed.`,
-        });
-
-    } catch (error) {
-        console.error('Import error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
 exports.createMatadata = async (req, res) => {
     try {
         const errors = validationResult(req);
