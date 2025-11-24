@@ -22,11 +22,11 @@ const ChallengeLogSchema = new mongoose.Schema({
     },
     value: {
         type: Number,
-        required: true // e.g., 5 km, 30 pushups, etc.
+        required: true
     },
     unit: {
         type: String,
-        default: "" //e.g., steps, pushed, glass
+        default: ""
     },
     note: {
         type: String,

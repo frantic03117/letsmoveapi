@@ -164,8 +164,10 @@ exports.getChallenges = async (req, res) => {
 exports.joinChallenge = async (req, res) => {
     try {
         const { challenge_id } = req.body;
-        const user_id = req.user._id;
-
+        const user_id = req.user?.role == "User" ? req.user._id : req.body.user;
+        if (!user_id) {
+            return res.status(500).json({ success: 0, message: "No user found" });
+        }
         const alreadyJoined = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id });
         if (alreadyJoined) {
             return res.status(400).json({ success: 0, message: "Already joined this challenge" });
@@ -184,43 +186,143 @@ exports.joinChallenge = async (req, res) => {
 };
 
 // 📌 GET PARTICIPANTS
+// 📌 GET PARTICIPANTS WITH LOGS + PAGINATION
 exports.getParticipants = async (req, res) => {
     try {
-        const { challenge_id } = req.params;
-        const participants = await ChallengeParticipant.find({ challenge: challenge_id }).populate("user", "first_name email");
-        return res.json({ success: 1, data: participants });
+        const { challenge_id, page = 1, limit = 10 } = req.query;
+
+        // Filters
+        let filter = {};
+        if (challenge_id) filter.challenge = challenge_id;
+
+        const skip = (page - 1) * limit;
+
+        // -------------------------------
+        // 📌 Fetch participants (paginated)
+        // -------------------------------
+        const participants = await ChallengeParticipant
+            .find(filter)
+            .populate("user", "first_name email")
+            .skip(skip)
+            .limit(Number(limit))
+            .lean(); // lean() returns plain JS object
+
+        // -------------------------------
+        // 📌 Attach challenge logs to each participant
+        // -------------------------------
+        const participantIds = participants.map(p => p._id);
+
+        // Get logs for these participants
+        const logs = await ChallengeLog.find({
+            participant: { $in: participantIds }
+        })
+            .sort({ log_date: -1 })   // newest first
+            .lean();
+
+        // Attach logs to their participant
+        participants.forEach(p => {
+            p.logs = logs.filter(l => l.participant.toString() === p._id.toString());
+        });
+
+        // -------------------------------
+        // 📌 Count total for pagination
+        // -------------------------------
+        const total = await ChallengeParticipant.countDocuments(filter);
+
+        return res.json({
+            success: 1,
+            pagination: {
+                page: Number(page),
+                limit: Number(limit),
+                total,
+                total_pages: Math.ceil(total / limit),
+            },
+            data: participants
+        });
+
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
 
+
 // 📌 ADD LOG
 exports.addLog = async (req, res) => {
     try {
-        const { challenge_id, value, unit, note } = req.body;
-        const user_id = req.user._id;
+        const { challenge_id, value, note } = req.body;
+        const user_id = req.user.role == "User" ? req.user._id : req.body.user;
 
-        const participant = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id });
+        if (!user_id) {
+            return res.status(500).json({ success: 0, message: "No user found" });
+        }
+
+        const participant = await ChallengeParticipant.findOne({
+            challenge: challenge_id,
+            user: user_id
+        });
+
         if (!participant) {
             return res.status(400).json({ success: 0, message: "You are not part of this challenge" });
         }
 
+        const findChallenge = await Challenge.findById(challenge_id);
+        if (!findChallenge) {
+            return res.status(500).json({ success: 0, message: "No challenge found" });
+        }
+
+        // -------------------------
+        // 📌 Prepare Media Array
+        // -------------------------
+        const media = [];
+
+        if (req.files && req.files.image) {
+            req.files.image.forEach(img => {
+                media.push({
+                    url: img.path,
+                    type: "image"
+                });
+            });
+        }
+
+        if (req.files && req.files.video) {
+            req.files.video.forEach(vid => {
+                media.push({
+                    url: vid.path,
+                    type: "video"
+                });
+            });
+        }
+
+        // -------------------------
+        // 📌 Create Log
+        // -------------------------
         const log = await ChallengeLog.create({
             challenge: challenge_id,
             participant: participant._id,
             user: user_id,
             value,
-            unit,
+            unit: findChallenge.target_unit,
             note,
             log_date: new Date(),
+            media   // <-- saving uploaded media here
         });
-        participant.total_progress += Number(value);
+
+        // Update participant progress
+        participant.progress_value += Number(value);
+        participant.progress_unit = findChallenge.target_unit;
         await participant.save();
-        return res.status(201).json({ success: 1, message: "Log added", data: log });
+
+        return res.status(201).json({
+            success: 1,
+            message: "Log added",
+            data: log
+        });
+
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
+
 
 // 📌 GET LOGS
 exports.getLogs = async (req, res) => {
