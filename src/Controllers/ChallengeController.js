@@ -164,8 +164,10 @@ exports.getChallenges = async (req, res) => {
 exports.joinChallenge = async (req, res) => {
     try {
         const { challenge_id } = req.body;
-        const user_id = req.user._id;
-
+        const user_id = req.user?.role == "User" ? req.user._id : req.body.user;
+        if (!user_id) {
+            return res.status(500).json({ success: 0, message: "No user found" });
+        }
         const alreadyJoined = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id });
         if (alreadyJoined) {
             return res.status(400).json({ success: 0, message: "Already joined this challenge" });
@@ -186,8 +188,10 @@ exports.joinChallenge = async (req, res) => {
 // 📌 GET PARTICIPANTS
 exports.getParticipants = async (req, res) => {
     try {
-        const { challenge_id } = req.params;
-        const participants = await ChallengeParticipant.find({ challenge: challenge_id }).populate("user", "first_name email");
+        const { challenge_id } = req.query;
+        let fdata = {};
+        if (challenge_id) fdata['challenge'] = challenge_id;
+        const participants = await ChallengeParticipant.find({ ...fdata }).populate("user", "first_name email");
         return res.json({ success: 1, data: participants });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
@@ -197,30 +201,79 @@ exports.getParticipants = async (req, res) => {
 // 📌 ADD LOG
 exports.addLog = async (req, res) => {
     try {
-        const { challenge_id, value, unit, note } = req.body;
-        const user_id = req.user._id;
+        const { challenge_id, value, note } = req.body;
+        const user_id = req.user.role == "User" ? req.user._id : req.body.user;
 
-        const participant = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id });
+        if (!user_id) {
+            return res.status(500).json({ success: 0, message: "No user found" });
+        }
+
+        const participant = await ChallengeParticipant.findOne({
+            challenge: challenge_id,
+            user: user_id
+        });
+
         if (!participant) {
             return res.status(400).json({ success: 0, message: "You are not part of this challenge" });
         }
 
+        const findChallenge = await Challenge.findById(challenge_id);
+        if (!findChallenge) {
+            return res.status(500).json({ success: 0, message: "No challenge found" });
+        }
+
+        // -------------------------
+        // 📌 Prepare Media Array
+        // -------------------------
+        const media = [];
+
+        if (req.files && req.files.image) {
+            req.files.image.forEach(img => {
+                media.push({
+                    url: img.path,    // OR img.filename if you want only filename
+                    type: "image"
+                });
+            });
+        }
+
+        if (req.files && req.files.video) {
+            req.files.video.forEach(vid => {
+                media.push({
+                    url: vid.path,
+                    type: "video"
+                });
+            });
+        }
+
+        // -------------------------
+        // 📌 Create Log
+        // -------------------------
         const log = await ChallengeLog.create({
             challenge: challenge_id,
             participant: participant._id,
             user: user_id,
             value,
-            unit,
+            unit: findChallenge.target_unit,
             note,
             log_date: new Date(),
+            media   // <-- saving uploaded media here
         });
+
+        // Update participant progress
         participant.total_progress += Number(value);
         await participant.save();
-        return res.status(201).json({ success: 1, message: "Log added", data: log });
+
+        return res.status(201).json({
+            success: 1,
+            message: "Log added",
+            data: log
+        });
+
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
+
 
 // 📌 GET LOGS
 exports.getLogs = async (req, res) => {

@@ -236,10 +236,7 @@ exports.user_list = async (req, res) => {
             mobile,
             createdFrom,
             createdTo,
-            hasAppointments,
-            noAppointments,
-            hasMedicalTest,
-            noMedicalTest,
+
         } = req.query;
 
         if (longitude && latitude) {
@@ -269,14 +266,15 @@ exports.user_list = async (req, res) => {
         }
 
         if (req.user) {
-            if (req.user.role == "Clinic") {
-                fdata["clinic"] = req.user._id;
+            if (req.user.role == "User") {
+                fdata["_id"] = req.user._id;
             }
         }
 
         if (keyword) {
             fdata["$or"] = [
-                { name: { $regex: keyword, $options: "i" } },
+                { first_name: { $regex: keyword, $options: "i" } },
+                { last_name: { $regex: keyword, $options: "i" } },
                 { email: { $regex: keyword, $options: "i" } },
                 { mobile: { $regex: keyword, $options: "i" } },
             ];
@@ -287,7 +285,7 @@ exports.user_list = async (req, res) => {
 
         // 🔹 Extra filters from Drawer
         if (name) {
-            fdata["name"] = { $regex: name, $options: "i" };
+            fdata["first_name"] = { $regex: name, $options: "i" };
         }
         if (email) {
             fdata["email"] = { $regex: email, $options: "i" };
@@ -304,142 +302,12 @@ exports.user_list = async (req, res) => {
                 fdata["createdAt"]["$lte"] = new Date(createdTo);
             }
         }
-        const matchPipeline = [
-            ...(hasAppointments === "true"
-                ? [{ $match: { appointments: { $ne: [] } } }]
-                : []),
-            ...(noAppointments === "true"
-                ? [{ $match: { appointments: { $size: 0 } } }]
-                : []),
-            ...(hasMedicalTest === "true"
-                ? [{ $match: { medicalTests: { $ne: [] } } }]
-                : []),
-            ...(noMedicalTest === "true"
-                ? [{ $match: { medicalTests: { $size: 0 } } }]
-                : []),
-        ];
-
         const resp = await User.aggregate([
             { $match: fdata },
-            {
-                $lookup: {
-                    from: "medicaltests",
-                    localField: "_id",
-                    foreignField: "user",
-                    as: "medicalTests",
-                },
-            },
-            {
-                $lookup: {
-                    from: "bookings",
-                    let: { userId: "$_id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ["$user", "$$userId"] },
-                                        { $ne: ["$status", "Cancelled"] },
-                                        { $eq: ["$payment_status", "Success"] },
-                                    ],
-                                },
-                            },
-                        },
-                    ],
-                    as: "appointments",
-                },
-            },
-            {
-                $lookup: {
-                    from: "carts",
-                    let: { userId: "$_id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ["$user", "$$userId"] },
-                                        { $eq: ["$is_ordered", "Ordered"] },
-                                    ],
-                                },
-                            },
-                        },
-                    ],
-                    as: "orders",
-                },
-            },
-            ...matchPipeline, // ✅ Filtering first
             { $sort: { created_at: -1 } },
             { $skip: skip },
             { $limit: parseInt(perPage) },
         ]);
-
-
-        // const resp = await User.aggregate([
-        //     { $match: fdata },
-        //     { $sort: { created_at: -1 } },
-        //     { $skip: skip },
-        //     { $limit: parseInt(perPage) },
-        //     {
-        //         $lookup: {
-        //             from: "medicaltests",
-        //             localField: "_id",
-        //             foreignField: "user",
-        //             as: "medicalTests",
-        //         },
-        //     },
-        //     {
-        //         $lookup: {
-        //             from: "bookings",
-        //             let: { userId: "$_id" },
-        //             pipeline: [
-        //                 {
-        //                     $match: {
-        //                         $expr: {
-        //                             $and: [
-        //                                 { $eq: ["$user", "$$userId"] },
-        //                                 { $ne: ["$status", "Cancelled"] },
-        //                                 { $eq: ["$payment_status", "Success"] },
-        //                             ],
-        //                         },
-        //                     },
-        //                 },
-        //             ],
-        //             as: "appointments",
-        //         },
-        //     },
-        //     {
-        //         $lookup: {
-        //             from: "carts",
-        //             let: { userId: "$_id" },
-        //             pipeline: [
-        //                 {
-        //                     $match: {
-        //                         $expr: {
-        //                             $and: [
-        //                                 { $eq: ["$user", "$$userId"] },
-        //                                 { $eq: ["$is_ordered", "Ordered"] },
-        //                             ],
-        //                         },
-        //                     },
-        //                 },
-        //             ],
-        //             as: "orders",
-        //         },
-        //     },          
-        //     ...(hasAppointments === "true"
-        //         ? [{ $match: { appointments: { $ne: [] } } }]
-        //         : []),
-        //     ...(noAppointments === "true"
-        //         ? [{ $match: { appointments: { $size: 0 } } }]
-        //         : []),
-        //     ...(hasMedicalTest === "true"
-        //         ? [{ $match: { medicalTests: { $ne: [] } } }]
-        //         : []),
-        //     ...(noMedicalTest === "true"
-        //         ? [{ $match: { medicalTests: { $size: 0 } } }]
-        //         : []),
-        // ]);
 
         const totaldocs = await User.countDocuments(fdata);
         const totalPage = Math.ceil(totaldocs / perPage);
