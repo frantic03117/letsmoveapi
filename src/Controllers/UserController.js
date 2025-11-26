@@ -122,80 +122,15 @@ exports.verify_otp = async (req, res) => {
 exports.update_profile = async (req, res) => {
     try {
         const id = req.params.id ?? req.user._id;
-        const fields = ['name', 'email'];
-        const emptyFields = fields.filter(field => !req.body[field]);
-        if (emptyFields.length > 0) {
-            return res.json({ success: 0, message: 'The following fields are required:' + emptyFields.join(','), fields: emptyFields });
-        }
-        const { mobile } = req.body;
-        if (mobile) {
-            const isMobileExists = await User.findOne({ mobile: mobile, _id: { $ne: id } });
-            if (mobile?.toString().length != 10) {
-                return res.json({ success: 0, message: "Mobile is not valid" })
-            }
-
-            if (isMobileExists) {
-                return res.json({
-                    errors: [{ 'message': "Mobile is already in use" }],
-                    success: 0,
-                    data: [],
-                    message: "Mobile is already in use"
-                })
-            }
-        }
-
-
         const data = {
             ...req.body
         }
-        if (req.body.mode) {
-            data['mode'] = JSON.parse(req.body.mode)
-        }
-        if (req.body.category) {
-            const ctg = JSON.parse(req.body.category);
-            data['category'] = ctg.map(itm => itm._id);
-            const parsedCategories = JSON.parse(req.body.category);
-            data['category_fee'] = parsedCategories.map(cat => ({
-                category: cat._id,
-                online_fee: cat.online_fee || 0,
-                offline_fee: cat.offline_fee || 0
-            }));
-        }
-
         if (req.files?.profile_image) {
             data['profile_image'] = req.files.profile_image[0].path
         }
-        if (req.files?.registration_certificate) {
-            data['registration_certificate'] = req.files.registration_certificate[0].path
-        }
-        if (req.files?.graduation_certificate) {
-            data['graduation_certificate'] = req.files.graduation_certificate[0].path
-        }
-        if (req.files?.post_graduation_certificate) {
-            data['post_graduation_certificate'] = req.files.post_graduation_certificate[0].path
-        }
-        if (req.files?.mci_certificate) {
-            data['mci_certificate'] = req.files.mci_certificate[0].path
-        }
-        if (req.files?.aadhaar_front) {
-            data['aadhaar_front'] = req.files.aadhaar_front[0].path
-        }
-        if (req.files?.aadhaar_back) {
-            data['aadhaar_back'] = req.files.aadhaar_back[0].path
-        }
-        if (req.files?.pan_image) {
-            data['pan_image'] = req.files.pan_image[0].path
-        }
-
-
         const userdata = await User.findOneAndUpdate({ _id: id }, { $set: data }, { new: true });
-        // const tokenuser = {
-        //     _id: userdata._id,
-        // }
-        // const token = jwt.sign({ user: tokenuser }, SECRET_KEY, { expiresIn: "1 days" })
         return res.json({
             data: userdata,
-            // token,
             success: 1,
             errors: [],
             message: "User created successfully"
