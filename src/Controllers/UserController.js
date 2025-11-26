@@ -256,7 +256,7 @@ exports.user_list = async (req, res) => {
         return res.json({
             success: 1,
             message: "list of users",
-            data: resp,
+            data: (req.user && req.user.role == "User") ? resp[0] : resp,
             pagination,
             fdata,
         });
