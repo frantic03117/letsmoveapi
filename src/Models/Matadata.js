@@ -15,6 +15,7 @@ const schema = new Schema({
         default: false
     },
     label: String,
-    placeholder: String
+    placeholder: String,
+    order: Number
 }, { timestamps: true });
 module.exports = new model('Matadata', schema);

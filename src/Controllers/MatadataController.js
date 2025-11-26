@@ -46,8 +46,12 @@ exports.updateMatadata = async (req, res) => {
 }
 exports.getAllMatadata = async (req, res) => {
     try {
-        // await Matadata.deleteMany()
-        const matadatas = await Matadata.find();
+        const { id } = req.query;
+        let fdata = {}
+        if (id) {
+            fdata['_id'] = id;
+        }
+        const matadatas = await Matadata.find(fdata).sort({ order: 1 })
 
         // Convert documents to plain JS objects for modification
         const result = await Promise.all(

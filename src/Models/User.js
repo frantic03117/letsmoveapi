@@ -84,7 +84,8 @@ const schema = new Schema({
     },
     island: {
         type: Schema.Types.ObjectId,
-        ref: "Country"
+        ref: "Country",
+        default: null
     },
     fitness_level: String,
     diet: String,
