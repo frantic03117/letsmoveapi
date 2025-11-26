@@ -410,3 +410,74 @@ exports.delete_user = async (req, res) => {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
+exports.calculate_bmi = async (req, res) => {
+    try {
+        let { height, heightUnit, weight, weightUnit, age } = req.body;
+
+        // Required fields check
+        const requiredFields = ['height', 'heightUnit', 'weight', 'weightUnit', 'age'];
+        const emptyFields = requiredFields.filter(field => !req.body[field]);
+
+        if (emptyFields.length > 0) {
+            return res.json({
+                success: 0,
+                message: 'The following fields are required: ' + emptyFields.join(', '),
+                fields: emptyFields
+            });
+        }
+
+        // Validate numeric values
+        if (isNaN(height) || height <= 0) {
+            return res.json({ success: 0, message: "Height must be a positive number" });
+        }
+        if (!['cm', 'in'].includes(heightUnit)) {
+            return res.json({ success: 0, message: "Height unit must be 'cm' or 'in'" });
+        }
+        if (isNaN(weight) || weight <= 0) {
+            return res.json({ success: 0, message: "Weight must be a positive number" });
+        }
+        if (!['kg', 'lb'].includes(weightUnit)) {
+            return res.json({ success: 0, message: "Weight unit must be 'kg' or 'lb'" });
+        }
+        if (isNaN(age) || age <= 0) {
+            return res.json({ success: 0, message: "Age must be a positive number" });
+        }
+
+        // Convert height → meters
+        let heightMeters;
+        if (heightUnit === 'cm') {
+            heightMeters = height / 100;
+        } else if (heightUnit === 'in') {
+            heightMeters = height * 0.0254;
+        }
+
+        // Convert weight → kg
+        let weightKg;
+        if (weightUnit === 'kg') {
+            weightKg = weight;
+        } else if (weightUnit === 'lb') {
+            weightKg = weight * 0.453592;
+        }
+
+        // BMI calculation
+        const bmi = weightKg / (heightMeters * heightMeters);
+
+        // Determine category
+        const getCategory = (b) => {
+            if (b < 18.5) return "Underweight";
+            if (b < 24.9) return "Normal weight";
+            if (b < 29.9) return "Overweight";
+            return "Obesity";
+        };
+
+        return res.json({
+            success: 1,
+            age,
+            bmi: Number(bmi.toFixed(2)),
+            category: getCategory(bmi)
+        });
+
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+};
