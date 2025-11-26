@@ -7,7 +7,11 @@ const router = Router();
 router.post('/send-otp', send_otp);
 router.get('/', Auth(), user_list);
 router.post('/verify-otp', verify_otp);
-router.post('/register', store_profile);
+router.post('/register', Store('image').fields([
+    {
+        name: "profile_image", maxCount: 1
+    }
+]), store_profile);
 router.post('/calculate-bmi', calculate_bmi);
 router.put('/update', Auth(), Store('image').fields([
     {
