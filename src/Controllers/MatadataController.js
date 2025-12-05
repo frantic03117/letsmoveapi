@@ -120,13 +120,22 @@ exports.getCountry = async (req, res) => {
 exports.getMatadataIsland = async (req, res) => {
 
     try {
-        const { id, page_name = "island" } = req.query;
+        // const { page_name } = req.params;
+        const { id, country, page_name = "island" } = req.query;
         let fdata = {}
-        if (page_name != "all") {
+        if (page_name && page_name != "all") {
             fdata['page_name'] = page_name;
         }
         if (id) {
             fdata['_id'] = id;
+        }
+        const countries = [
+            "691181e9838ad428f0e5a285",
+            "691181e9838ad428f0e5a2bb",
+            "691181e9838ad428f0e5a271"
+        ];
+        if (page_name == "island" && !countries.includes(country)) {
+            return res.json({ success: 0, data: [], message: "Only selected countries select NHIP" })
         }
         const matadatas = await Matadata.find(fdata).sort({ order: 1 })
         const result = await Promise.all(
