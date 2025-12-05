@@ -46,14 +46,15 @@ exports.updateMatadata = async (req, res) => {
 }
 exports.getAllMatadata = async (req, res) => {
     try {
-        const { id } = req.query;
+        const { id, page_name = "register" } = req.query;
         let fdata = {}
+        if (page_name != "all") {
+            fdata['page_name'] = page_name;
+        }
         if (id) {
             fdata['_id'] = id;
         }
         const matadatas = await Matadata.find(fdata).sort({ order: 1 })
-
-        // Convert documents to plain JS objects for modification
         const result = await Promise.all(
             matadatas.map(async (meta) => {
                 const metaObj = meta.toObject();
@@ -116,3 +117,40 @@ exports.getCountry = async (req, res) => {
         });
     }
 };
+exports.getMatadataIsland = async (req, res) => {
+
+    try {
+        const { id, page_name = "island" } = req.query;
+        let fdata = {}
+        if (page_name != "all") {
+            fdata['page_name'] = page_name;
+        }
+        if (id) {
+            fdata['_id'] = id;
+        }
+        const matadatas = await Matadata.find(fdata).sort({ order: 1 })
+        const result = await Promise.all(
+            matadatas.map(async (meta) => {
+                const metaObj = meta.toObject();
+                if (metaObj?.name?.toLowerCase() === "island") {
+                    const countries = await Country.find({ name: { $regex: "island", $options: 'i' } }, "name code dial_code flag_image").sort({ name: 1 }).lean();
+                    metaObj.options = countries.map((c) => ({
+                        label: c.name,
+                        value: c.code,
+                        dial_code: c.dial_code,
+                        flag_image: c.flag_image || "https://flagcdn.com/" + c.code.toLowerCase() + ".svg"
+                    }));
+                }
+
+                return metaObj;
+            })
+        );
+
+        res.status(200).json({ data: result, success: 1 });
+    } catch (err) {
+        console.error("Error fetching metadata:", err);
+        res.status(500).json({ message: err.message, success: 0 });
+    }
+
+
+}

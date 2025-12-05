@@ -1,108 +1,95 @@
 {
-"success": 1,
-"data": [
-{
-"_id": "69085e1757252f555a3641c0",
-"name": "name",
-"type": "String",
-"required": false,
-"default": "",
-"enum": [
-""
-],
-"ref": "",
-"trim": false,
-"label": "Name",
-"placeholder": "Name",
-"createdAt": "2025-11-03T07:47:35.206Z",
-"updatedAt": "2025-11-03T07:47:35.206Z",
-"__v": 0
-},
-{
-"_id": "69085e5457252f555a3641c5",
-"name": "email",
-"type": "String",
-"required": false,
-"default": "",
-"enum": [
-""
-],
-"ref": "",
-"trim": false,
-"label": "Email",
-"placeholder": "Email",
-"createdAt": "2025-11-03T07:48:36.653Z",
-"updatedAt": "2025-11-03T07:48:36.653Z",
-"__v": 0
-},
-{
-"_id": "69085e6c57252f555a3641c8",
-"name": "phone",
-"type": "String",
-"required": false,
-"default": "",
-"enum": [
-""
-],
-"ref": "",
-"trim": false,
-"label": "Phone",
-"placeholder": "Phone",
-"createdAt": "2025-11-03T07:49:00.485Z",
-"updatedAt": "2025-11-03T07:49:00.485Z",
-"__v": 0
-},
-{
-"_id": "69085e8757252f555a3641cb",
-"name": "country",
-"type": "apiSelect",
-"required": false,
-"default": "",
-"enum": [
-""
-],
-"ref": "",
-"trim": false,
-"label": "Select Country",
-"placeholder": "Select Country",
-"createdAt": "2025-11-03T07:49:27.247Z",
-"updatedAt": "2025-11-03T07:49:27.247Z",
-"__v": 0
-},
-{
-"_id": "69085f063f5d535cfb2c2e91",
-"name": "gender",
-"type": "enum",
-"required": false,
-"default": "",
-"enum": [
-"Male",
-" Female"
-],
-"ref": "",
-"trim": false,
-"label": "Gender",
-"placeholder": "Gender",
-"createdAt": "2025-11-03T07:51:34.298Z",
-"updatedAt": "2025-11-03T07:51:34.298Z",
-"__v": 0
-},
-{
-"_id": "69085f683f5d535cfb2c2e94",
-"name": "image",
-"type": "image",
-"required": false,
-"default": "",
-"enum": [
-""
-],
-"ref": "",
-"trim": false,
-"label": "Upload Image",
-"placeholder": "Upload Image",
-"createdAt": "2025-11-03T07:53:12.745Z",
-"updatedAt": "2025-11-03T07:53:12.745Z",
-"__v": 0
-}
-]
+  "success": 1,
+  "data": [
+    {
+      "_id": "69085e1757252f555a3641c0",
+      "name": "name",
+      "type": "String",
+      "required": false,
+      "default": "",
+      "enum": [""],
+      "ref": "",
+      "trim": false,
+      "label": "Name",
+      "placeholder": "Name",
+      "createdAt": "2025-11-03T07:47:35.206Z",
+      "updatedAt": "2025-11-03T07:47:35.206Z",
+      "__v": 0
+    },
+    {
+      "_id": "69085e5457252f555a3641c5",
+      "name": "email",
+      "type": "String",
+      "required": false,
+      "default": "",
+      "enum": [""],
+      "ref": "",
+      "trim": false,
+      "label": "Email",
+      "placeholder": "Email",
+      "createdAt": "2025-11-03T07:48:36.653Z",
+      "updatedAt": "2025-11-03T07:48:36.653Z",
+      "__v": 0
+    },
+    {
+      "_id": "69085e6c57252f555a3641c8",
+      "name": "phone",
+      "type": "String",
+      "required": false,
+      "default": "",
+      "enum": [""],
+      "ref": "",
+      "trim": false,
+      "label": "Phone",
+      "placeholder": "Phone",
+      "createdAt": "2025-11-03T07:49:00.485Z",
+      "updatedAt": "2025-11-03T07:49:00.485Z",
+      "__v": 0
+    },
+    {
+      "_id": "69085e8757252f555a3641cb",
+      "name": "country",
+      "type": "apiSelect",
+      "required": false,
+      "default": "",
+      "enum": [""],
+      "ref": "",
+      "trim": false,
+      "label": "Select Country",
+      "placeholder": "Select Country",
+      "createdAt": "2025-11-03T07:49:27.247Z",
+      "updatedAt": "2025-11-03T07:49:27.247Z",
+      "__v": 0
+    },
+    {
+      "_id": "69085f063f5d535cfb2c2e91",
+      "name": "gender",
+      "type": "enum",
+      "required": false,
+      "default": "",
+      "enum": ["Male", " Female"],
+      "ref": "",
+      "trim": false,
+      "label": "Gender",
+      "placeholder": "Gender",
+      "createdAt": "2025-11-03T07:51:34.298Z",
+      "updatedAt": "2025-11-03T07:51:34.298Z",
+      "__v": 0
+    },
+    {
+      "_id": "69085f683f5d535cfb2c2e94",
+      "name": "image",
+      "type": "image",
+      "required": false,
+      "default": "",
+      "enum": [""],
+      "ref": "",
+      "trim": false,
+      "label": "Upload Image",
+      "placeholder": "Upload Image",
+      "createdAt": "2025-11-03T07:53:12.745Z",
+      "updatedAt": "2025-11-03T07:53:12.745Z",
+      "__v": 0
+    }
+  ]
 }
