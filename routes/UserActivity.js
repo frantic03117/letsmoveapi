@@ -3,6 +3,6 @@ const { getActivity, createActivity } = require("../src/Controllers/UserActivity
 const { Auth } = require("../src/middleware/Auth");
 
 const router = Router();
-router.get('/', getActivity);
+router.get('/', Auth(), getActivity);
 router.post('/', Auth(), createActivity);
 module.exports = router;
