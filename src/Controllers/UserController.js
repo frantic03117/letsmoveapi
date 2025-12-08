@@ -241,7 +241,7 @@ exports.user_list = async (req, res) => {
             { $match: fdata },
             {
                 $lookup: {
-                    from: "settings",          // collection name
+                    from: "setting",          // collection name
                     localField: "goal", // field in User
                     foreignField: "_id",        // matching field in Settings
                     as: "goal_data"
