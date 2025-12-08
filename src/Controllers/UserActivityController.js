@@ -34,7 +34,7 @@ exports.createActivity = async (req, res) => {
     }
 }
 exports.getActivity = async (req, res) => {
-    await UserActivity.deleteMany({})
+    // await UserActivity.deleteMany({})
     const { id, activity_date, activity_type } = req.query;
     const fdata = {};
 
