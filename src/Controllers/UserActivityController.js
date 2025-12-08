@@ -34,7 +34,7 @@ exports.createActivity = async (req, res) => {
     }
 }
 exports.getActivity = async (req, res) => {
-
+    await UserActivity.deleteMany({})
     const { id, activity_date, activity_type } = req.query;
     const fdata = {};
 
@@ -82,7 +82,7 @@ exports.getActivity = async (req, res) => {
         success: 1,
         message: "List of activity",
         data: resp,
-        total: totalResult
+        total: totalResult[0]?.total_value
     });
 
 
