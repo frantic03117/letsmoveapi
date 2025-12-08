@@ -1,7 +1,7 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 const Banner = require('../Models/Banner');
-const User = require('../Models/User');
-const Matadata = require('../Models/Matadata');
+// const User = require('../Models/User');
+// const Matadata = require('../Models/Matadata');
 
 const _create = async (req, res) => {
     const { url } = req.body;
