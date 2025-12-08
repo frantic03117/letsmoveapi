@@ -244,14 +244,14 @@ exports.user_list = async (req, res) => {
                     from: "settings",          // collection name
                     localField: "goal", // field in User
                     foreignField: "_id",        // matching field in Settings
-                    as: "goal"
+                    as: "goal_data"
                 }
             },
 
             // Convert array → single object
             {
                 $unwind: {
-                    path: "$goal",
+                    path: "$goal_data",
                     preserveNullAndEmptyArrays: true
                 }
             },
