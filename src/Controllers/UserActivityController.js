@@ -70,11 +70,19 @@ exports.getActivity = async (req, res) => {
     }
 
     const resp = await UserActivity.find(fdata).sort({ activity_date: -1 });
+    const totalResult = await UserActivity.aggregate([
+        { $match: fdata },
+        { $group: { _id: null, total_value: { $sum: "$activity_value" } } }
+    ]);
+
+    const totalValue = totalResult[0]?.total_value || 0;
+
 
     return res.json({
         success: 1,
         message: "List of activity",
-        data: resp
+        data: resp,
+        total: totalResult
     });
 
 
