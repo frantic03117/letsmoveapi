@@ -239,6 +239,22 @@ exports.user_list = async (req, res) => {
         }
         const resp = await User.aggregate([
             { $match: fdata },
+            {
+                $lookup: {
+                    from: "settings",          // collection name
+                    localField: "goal", // field in User
+                    foreignField: "_id",        // matching field in Settings
+                    as: "goal"
+                }
+            },
+
+            // Convert array → single object
+            {
+                $unwind: {
+                    path: "$goal",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
             { $sort: { created_at: -1 } },
             { $skip: skip },
             { $limit: parseInt(perPage) },

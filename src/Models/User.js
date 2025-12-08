@@ -89,7 +89,11 @@ const schema = new Schema({
     },
     fitness_level: String,
     diet: String,
-    goal: String,
+    goal: {
+        type: Schema.Types.ObjectId,
+        ref: "Setting",
+        default: null
+    },
     age: Number,
     weight: {
         type: Number
