@@ -8,9 +8,9 @@ const { Auth } = require("../src/middleware/Auth");
 
 const router = Router();
 router.get('/', get_setting);
-router.get('/setting-type', Auth, getTypes);
+router.get('/setting-type', Auth(), getTypes);
 router.post('/', Store('image').single('file'), create_setting);
-router.delete('/delete/:id', Auth, delete_setting);
-router.put('/update/:id', Auth, Store('image').single('file'), update_setting);
-router.put('/activation/:id', Auth, update_activation);
+router.delete('/delete/:id', Auth(), delete_setting);
+router.put('/update/:id', Auth(), Store('image').single('file'), update_setting);
+router.put('/activation/:id', Auth(), update_activation);
 module.exports = router;
