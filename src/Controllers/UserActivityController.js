@@ -82,7 +82,8 @@ exports.getActivity = async (req, res) => {
         success: 1,
         message: "List of activity",
         data: resp,
-        total: totalValue
+        total: totalValue,
+        unit: totalResult[0].activity_unit
     });
 
 
