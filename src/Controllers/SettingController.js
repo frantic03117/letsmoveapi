@@ -27,33 +27,42 @@ exports.create_setting = async (req, res) => {
 exports.get_setting = async (req, res) => {
     try {
 
-        const { id, type, title, media_value, parent, page = 1, perPage = 10 } = req.query;
+        const { id, type, title, media_value, parent } = req.query;
         const fdata = {};
-        if (type) {
-            fdata['type'] = { $in: type.split(',') };
-        }
-        if (id) {
-            fdata['_id'] = id;
-        }
-        if (title) {
-            fdata['title'] = title;
-        }
-        if (parent) {
-            fdata['parent'] = parent;
-        }
-        if (media_value) {
-            fdata['media_value'] = media_value;
-        }
-        const settings = await Setting.find(fdata);
-        for (let s of settings) {
-            s.community_count = await Community.countDocuments({ category: { $in: [s._id] } });
-        }
 
-        return res.json({ success: 1, message: "Fetched successfully", data: settings })
+        if (type) fdata.type = { $in: type.split(',') };
+        if (id) fdata._id = id;
+        if (title) fdata.title = title;
+        if (parent) fdata.parent = parent;
+        if (media_value) fdata.media_value = media_value;
+
+        const settings = await Setting.find(fdata).lean();
+
+        // Run all count queries in parallel
+        const results = await Promise.all(
+            settings.map(async (s) => {
+                const count = await Community.countDocuments({
+                    category: s._id   // because category is an array of ObjectIds
+                });
+
+                return {
+                    ...s,
+                    community_count: count
+                };
+            })
+        );
+
+        return res.json({
+            success: 1,
+            message: "Fetched successfully",
+            data: results
+        });
+
     } catch (err) {
-        return res.json({ success: 0, message: err.message })
+        return res.json({ success: 0, message: err.message });
     }
-}
+};
+
 exports.delete_setting = async (req, res) => {
     try {
         const resp = await Setting.deleteOne({ _id: req.params.id });
