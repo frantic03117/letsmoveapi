@@ -7,7 +7,7 @@ const Store = require("../src/middleware/Store");
 const { Auth } = require("../src/middleware/Auth");
 const { joinCommunity, leaveCommunity, getCommunityMembers, checkJoinStatus } = require("../src/Controllers/communityJoin.controller");
 
-router.get('/', getAllCommunities);
+router.get('/', Auth(), getAllCommunities);
 router.post('/', Auth('Admin', 'Employee', 'SubAdmin'), Store("any").any(), createCommunity);
 router.put('/update/:id', Auth('Admin', 'Employee', 'SubAdmin'), Store("any").any(), updateCommunity);
 router.delete('/delete/:id', Auth('Admin', 'Employee', 'SubAdmin'), deleteCommunity);
