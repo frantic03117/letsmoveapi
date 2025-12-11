@@ -240,7 +240,7 @@ exports.getAllCommunities = async (req, res) => {
                 sharedAt: share.createdAt,
             }));
             c.members_preview = members
-            c.isJoinedByMe = isJoinedByMe ? true : false
+            c.isJoinedByMe = req?.user?._id
         }
         const pagination = {
             total,
