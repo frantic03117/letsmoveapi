@@ -195,7 +195,7 @@ exports.getAllCommunities = async (req, res) => {
 
 
         for (const c of communities) {
-            const [comments, likes, shares, members] = await Promise.all([
+            const [comments, likes, shares, members, isJoinedByMe] = await Promise.all([
                 // first 10 comments
                 CommunityComment.find({ community: c._id, parent_comment: null })
                     .populate("user", "first_name profile_image email")
@@ -220,6 +220,7 @@ exports.getAllCommunities = async (req, res) => {
                 CommunityJoin.find({ community: c._id }).populate("user", "first_name profile_image email").sort({ createdAt: -1 })
                     .limit(10)
                     .lean(),
+                CommunityJoin.findOne({ user: req?.user?._id })
             ]);
 
             c.comments_preview = comments.map((com) => ({
@@ -239,6 +240,7 @@ exports.getAllCommunities = async (req, res) => {
                 sharedAt: share.createdAt,
             }));
             c.members_preview = members
+            c.isJoinedByMe = isJoinedByMe ? true : false
         }
         const pagination = {
             total,
