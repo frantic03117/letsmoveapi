@@ -220,7 +220,7 @@ exports.getAllCommunities = async (req, res) => {
                 CommunityJoin.find({ community: c._id }).populate("user", "first_name profile_image email").sort({ createdAt: -1 })
                     .limit(10)
                     .lean(),
-                CommunityJoin.findOne({ user: req?.user?._id })
+                CommunityJoin.findOne({ community: c._id, user: req?.user?._id })
             ]);
 
             c.comments_preview = comments.map((com) => ({
