@@ -1,3 +1,4 @@
+const Community = require("../Models/Community");
 const Setting = require("../Models/Setting");
 
 const makeSlug = (title) => {
@@ -43,7 +44,11 @@ exports.get_setting = async (req, res) => {
         if (media_value) {
             fdata['media_value'] = media_value;
         }
-        const resp = await Setting.find(fdata);
+        const settings = await Setting.find(fdata);
+        for (let s of settings) {
+            s.community_count = await Community.countDocuments({ category: { $in: [s._id] } });
+        }
+
         return res.json({ success: 1, message: "Fetched successfully", data: resp })
     } catch (err) {
         return res.json({ success: 0, message: err.message })

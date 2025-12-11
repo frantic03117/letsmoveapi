@@ -169,6 +169,7 @@ exports.getAllCommunities = async (req, res) => {
             order = "desc",
             page = 1,
             limit = 10,
+            isJoinedByMe
         } = req.query;
 
         const query = {};
@@ -182,7 +183,18 @@ exports.getAllCommunities = async (req, res) => {
                 { short_description: new RegExp(search, "i") },
             ];
         }
+        if (isJoinedByMe != undefined) {
+            const joined = await CommunityJoin.find({ user: req.user._id }).select("community");
+            const joinedIds = joined.map(j => j.community.toString());
 
+            if (isJoinedByMe === "true") {
+                // Only joined challenges
+                query["_id"] = { $in: joinedIds };
+            } else if (isJoinedByMe === "false") {
+                // Only not joined challenges
+                query["_id"] = { $nin: joinedIds };
+            }
+        }
         const total = await Community.countDocuments(query);
 
         const communities = await Community.find(query)
