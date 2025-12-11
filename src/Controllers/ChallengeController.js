@@ -129,12 +129,24 @@ exports.deleteChallenge = async (req, res) => {
 // 📌 GET ALL CHALLENGES (with filters)
 exports.getChallenges = async (req, res) => {
     try {
-        const { id, category, type, page = 1, limit = 10 } = req.query;
+        const { id, category, type, page = 1, limit = 10, isJoined } = req.query;
         const query = {};
         if (id) query['_id'] = id;
         if (category) query.category = category;
         if (type) query.type = type;
+        if (isJoined !== undefined && req.user) {
+            // Get all challenge ids the user has joined
+            const joined = await ChallengeParticipant.find({ user: req.user._id }).select("challenge");
+            const joinedIds = joined.map(j => j.challenge.toString());
 
+            if (isJoined === "true") {
+                // Only joined challenges
+                query["_id"] = { $in: joinedIds };
+            } else if (isJoined === "false") {
+                // Only not joined challenges
+                query["_id"] = { $nin: joinedIds };
+            }
+        }
         const challenges = await Challenge.find(query).populate([
             {
                 path: "category"
