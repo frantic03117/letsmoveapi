@@ -49,7 +49,7 @@ exports.get_setting = async (req, res) => {
             s.community_count = await Community.countDocuments({ category: { $in: [s._id] } });
         }
 
-        return res.json({ success: 1, message: "Fetched successfully", data: resp })
+        return res.json({ success: 1, message: "Fetched successfully", data: settings })
     } catch (err) {
         return res.json({ success: 0, message: err.message })
     }
