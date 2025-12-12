@@ -8,6 +8,6 @@ const eventJoinSchema = new Schema(
     },
     { timestamps: true }
 );
-eventJoinSchema.index({ community: 1, user: 1 }, { unique: true });
+eventJoinSchema.index({ event: 1, user: 1 }, { unique: true });
 
 module.exports = model("EventJoin", eventJoinSchema);
