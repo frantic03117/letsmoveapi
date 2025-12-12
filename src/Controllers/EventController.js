@@ -36,9 +36,9 @@ exports.createEvent = async (req, res) => {
 }
 exports.getEvents = async (req, res) => {
     try {
-        const { id, category, search, page = 1, limit = 10 } = req.query;
+        const { id, category, search, page = 1, limit = 10, isJoinedByMe } = req.query;
         const filter = {};
-
+        const userId = req.user._id;
         if (id) filter._id = id;
         if (category) filter.category = category;
 
@@ -50,7 +50,21 @@ exports.getEvents = async (req, res) => {
                 { short_description: { $regex: search, $options: "i" } },
             ];
         }
+        let joinedEventIds = [];
+        if (userId) {
+            const joins = await EventJoin.find({ user: userId }).select("event");
+            joinedEventIds = joins.map(j => String(j.event));
 
+            if (isJoinedByMe != undefined) {
+                if (isJoined === "true") {
+                    // Only joined challenges
+                    filter["_id"] = { $in: joinedEventIds };
+                } else if (isJoined === "false") {
+                    // Only not joined challenges
+                    filter["_id"] = { $nin: joinedEventIds };
+                }
+            }
+        }
         const skip = (Number(page) - 1) * Number(limit);
 
         const [events, total] = await Promise.all([
@@ -68,6 +82,15 @@ exports.getEvents = async (req, res) => {
             });
         }
 
+
+
+        let finalEvents = events.map(event => {
+            const isJoined = joinedEventIds.includes(String(event._id));
+            return {
+                ...event.toObject(),
+                isJoinedByMe: isJoined
+            };
+        });
         return res.status(200).json({
             success: 1,
             pagination: {
@@ -76,7 +99,7 @@ exports.getEvents = async (req, res) => {
                 limit: Number(limit),
                 totalPages: Math.ceil(total / limit),
             },
-            data: events,
+            data: finalEvents,
         });
     } catch (err) {
         console.error("Get Events Error:", err);
