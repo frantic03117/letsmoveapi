@@ -155,7 +155,7 @@ exports.joinEvent = async (req, res) => {
         if (exists) {
             return res.status(400).json({ success: 0, message: "Already joined this event" });
         }
-        const join = await EventJoin.create({ community: id, user: userId });
+        const join = await EventJoin.create({ event: id, user: userId });
         await EventModel.findByIdAndUpdate(id, { $inc: { members_count: 1 } }, { new: true });
         return res.status(201).json({
             success: 1,
