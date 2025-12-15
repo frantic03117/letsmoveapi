@@ -2,7 +2,7 @@ const Challenge = require("../Models/Challenge");
 const ChallengeLog = require("../Models/ChallengeLog");
 const ChallengeParticipant = require("../Models/ChallengeParticipant");
 
-
+const mongoose = require("mongoose");
 // 📌 CREATE CHALLENGE
 exports.createChallenge = async (req, res) => {
     try {
@@ -131,13 +131,17 @@ exports.getChallenges = async (req, res) => {
     try {
         const { id, category, type, page = 1, limit = 10, isJoined } = req.query;
         const query = {};
-        if (id) query['_id'] = id;
-        if (category) query.category = category;
+        if (id) query._id = new mongoose.Types.ObjectId(id);
+        if (category) query.category = new mongoose.Types.ObjectId(category);
         if (type) query.type = type;
         if (isJoined !== undefined && req.user) {
             // Get all challenge ids the user has joined
-            const joined = await ChallengeParticipant.find({ user: req.user._id }).select("challenge");
-            const joinedIds = joined.map(j => j.challenge.toString());
+            const joined = await ChallengeParticipant
+                .find({ user: req.user._id })
+                .select("challenge");
+
+            const joinedIds = joined.map(j => j.challenge);
+
 
             if (isJoined === "true") {
                 // Only joined challenges
@@ -147,14 +151,64 @@ exports.getChallenges = async (req, res) => {
                 query["_id"] = { $nin: joinedIds };
             }
         }
-        const challenges = await Challenge.find(query).populate([
+        const challenges = await Challenge.aggregate([
+            { $match: query },
+
+            { $sort: { createdAt: -1 } },
+            { $skip: (page - 1) * limit },
+            { $limit: Number(limit) },
+
+            // populate category
             {
-                path: "category"
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category"
+                }
+            },
+            { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+
+            // members_preview
+            {
+                $lookup: {
+                    from: "challengeparticipants",
+                    let: { challengeId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$challenge", "$$challengeId"] }
+                            }
+                        },
+                        { $sort: { joined_at: 1 } },
+                        { $limit: 3 }, // 👈 preview size
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "user",
+                                foreignField: "_id",
+                                as: "user"
+                            }
+                        },
+                        { $unwind: "$user" },
+                        {
+                            $project: {
+                                _id: 1,
+                                team_name: 1,
+                                progress_value: 1,
+                                score: 1,
+                                "user._id": 1,
+                                "user.name": 1,
+                                "user.avatar": 1
+                            }
+                        }
+                    ],
+                    as: "members_preview"
+                }
             }
-        ])
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(Number(limit));
+        ]);
+
+
 
         const total = await Challenge.countDocuments(query);
         const pagination = {
