@@ -256,6 +256,7 @@ exports.getAllCommunities = async (req, res) => {
             c.members_preview = members
             c.isJoinedByMe = isJoinedByMe ? true : false
             c.isLikedByMe = isLikedByMe ? true : false
+            c.joining = isJoinedByMe
         }
         const pagination = {
             total,
