@@ -129,12 +129,12 @@ exports.deleteChallenge = async (req, res) => {
 // 📌 GET ALL CHALLENGES (with filters)
 exports.getChallenges = async (req, res) => {
     try {
-        const { id, category, type, page = 1, limit = 10, isJoined } = req.query;
+        const { id, category, type, page = 1, limit = 10, isJoinedByMe } = req.query;
         const query = {};
         if (id) query._id = new mongoose.Types.ObjectId(id);
         if (category) query.category = new mongoose.Types.ObjectId(category);
         if (type) query.type = type;
-        if (isJoined !== undefined && req.user) {
+        if (isJoinedByMe !== undefined && req.user) {
             // Get all challenge ids the user has joined
             const joined = await ChallengeParticipant
                 .find({ user: req.user._id })
@@ -143,10 +143,10 @@ exports.getChallenges = async (req, res) => {
             const joinedIds = joined.map(j => j.challenge);
 
 
-            if (isJoined === "true") {
+            if (isJoinedByMe === "true") {
                 // Only joined challenges
                 query["_id"] = { $in: joinedIds };
-            } else if (isJoined === "false") {
+            } else if (isJoinedByMe === "false") {
                 // Only not joined challenges
                 query["_id"] = { $nin: joinedIds };
             }
@@ -168,6 +168,45 @@ exports.getChallenges = async (req, res) => {
                 }
             },
             { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+            //isjoinedby me
+            // check if current user joined + get joined object
+            {
+                $lookup: {
+                    from: "challengeparticipants",
+                    let: { challengeId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$challenge", "$$challengeId"] },
+                                        { $eq: ["$user", req.user._id] }
+                                    ]
+                                }
+                            }
+                        },
+                        { $limit: 1 }
+                    ],
+                    as: "myParticipation"
+                }
+            },
+            {
+                $addFields: {
+                    isJoinedByMe: { $gt: [{ $size: "$myParticipation" }, 0] },
+                    joined: {
+                        $cond: {
+                            if: { $gt: [{ $size: "$myParticipation" }, 0] },
+                            then: { $arrayElemAt: ["$myParticipation", 0] },
+                            else: null
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    myParticipation: 0
+                }
+            },
 
             // members_preview
             {
