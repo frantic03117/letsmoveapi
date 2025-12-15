@@ -88,3 +88,59 @@ exports.getActivity = async (req, res) => {
 
 
 }
+exports.user_dashboard = async (req, res) => {
+    const { activity_date } = req.query;
+
+    let match = {};
+
+    // Filter by user
+    if (req.user?._id) {
+        match.user = req.user._id;
+    }
+
+    // Filter by date (full day)
+    if (activity_date) {
+        const dateObj = new Date(activity_date);
+        if (!isNaN(dateObj)) {
+            const nextDay = new Date(dateObj);
+            nextDay.setDate(nextDay.getDate() + 1);
+
+            match.activity_date = {
+                $gte: dateObj,
+                $lt: nextDay
+            };
+        }
+    }
+
+    const result = await UserActivity.aggregate([
+        { $match: match },
+        {
+            $group: {
+                _id: "$activity_type",
+                total_value: { $sum: { $toInt: "$activity_value" } },
+                unit: { $first: "$activity_unit" }
+            }
+        }
+    ]);
+
+    // Convert array → object for easy frontend use
+    const dashboard = {
+        calories: 0,
+        water: 0,
+        walk: 0,
+        sleep: 0
+    };
+
+    result.forEach(item => {
+        dashboard[item._id] = {
+            value: item.total_value,
+            unit: item.unit
+        };
+    });
+
+    return res.json({
+        success: 1,
+        message: "User dashboard data",
+        data: dashboard
+    });
+};

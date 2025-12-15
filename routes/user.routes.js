@@ -2,6 +2,7 @@ const { Router } = require("express");
 const { send_otp, verify_otp, store_profile, user_list, update_profile, calculate_bmi } = require("../src/Controllers/UserController");
 const { Auth } = require("../src/middleware/Auth");
 const Store = require("../src/middleware/Store");
+const { user_dashboard } = require("../src/Controllers/UserActivityController");
 
 const router = Router();
 router.post('/send-otp', send_otp);
@@ -13,6 +14,7 @@ router.post('/register', Store('image').fields([
     }
 ]), store_profile);
 router.post('/calculate-bmi', calculate_bmi);
+router.get('/dashboard', Auth(), user_dashboard);
 router.put('/update', Auth(), Store('image').fields([
     {
         name: "profile_image", maxCount: 1
