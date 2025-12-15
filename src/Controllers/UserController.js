@@ -79,24 +79,31 @@ exports.verify_otp = async (req, res) => {
         const item = await OtpModel.findOne({ country_code, mobile: mobile, otp: otp, is_verified: false });
         if (item) {
             await OtpModel.updateOne({ country_code, mobile: mobile }, { $set: { is_verified: true } });
-            let token = "";
-            const userExists = await User.findOne({ country_code, mobile: mobile });
-            if (userExists) {
-                if (userExists?.is_deleted) {
+            let token;
+            let user = await User.findOne({ country_code, mobile });
+            if (user) {
+                if (user?.is_deleted) {
                     return res.json({ data: [], success: 0, message: 'Account deleted' })
                 }
-                const tokenuser = {
-                    _id: userExists._id,
-                }
-                token = jwt.sign({ user: tokenuser }, SECRET_KEY, { expiresIn: "30 days" });
 
-                await User.findOneAndUpdate({ _id: userExists._id }, { $set: { jwt_token: token } });
 
+
+            } else {
+                // CREATE NEW USER
+                user = await User.create({
+                    country_code,
+                    mobile,
+                    is_deleted: false
+                });
             }
+            // Generate JWT
+            const tokenuser = { _id: user._id };
+            token = jwt.sign({ user: tokenuser }, SECRET_KEY, { expiresIn: "30 days" });
+            await User.findOneAndUpdate({ _id: user._id }, { $set: { jwt_token: token } });
             return res.json({
                 data: token,
                 verification_id: item._id,
-                is_exists: userExists ? true : false,
+                is_exists: user ? true : false,
                 success: 1,
                 errors: [],
                 message: userExists ? "Login Successfully" : "Otp Verified successfully"
