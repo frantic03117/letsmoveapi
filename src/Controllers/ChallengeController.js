@@ -198,8 +198,9 @@ exports.getChallenges = async (req, res) => {
                                 progress_value: 1,
                                 score: 1,
                                 "user._id": 1,
-                                "user.name": 1,
-                                "user.avatar": 1
+                                "user.first_name": 1,
+                                "user.last_name": 1,
+                                "user.profile_image": 1
                             }
                         }
                     ],
