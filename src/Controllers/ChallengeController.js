@@ -295,11 +295,11 @@ exports.joinChallenge = async (req, res) => {
 // 📌 GET PARTICIPANTS WITH LOGS + PAGINATION
 exports.getParticipants = async (req, res) => {
     try {
-        const { challenge_id, page = 1, limit = 10 } = req.query;
+        const { id, page = 1, limit = 10 } = req.query;
 
         // Filters
         let filter = {};
-        if (challenge_id) filter.challenge = challenge_id;
+        if (id) filter.challenge = id;
 
         const skip = (page - 1) * limit;
 
@@ -308,7 +308,7 @@ exports.getParticipants = async (req, res) => {
         // -------------------------------
         const participants = await ChallengeParticipant
             .find(filter)
-            .populate("user", "first_name email")
+            .populate("user", "first_name email last_name profile_image")
             .skip(skip)
             .limit(Number(limit))
             .lean(); // lean() returns plain JS object
