@@ -303,7 +303,7 @@ exports.leaveChallenge = async (req, res) => {
             challenge: challenge_id,
             user: user_id,
         }, { $set: { leave_at: new Date(), } });
-        return res.status(500).json({ success: 1, message: "Challenge updated successfully" });
+        return res.status(200).json({ success: 1, message: "Challenge updated successfully" });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
