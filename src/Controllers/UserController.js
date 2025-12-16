@@ -106,7 +106,7 @@ exports.verify_otp = async (req, res) => {
                 is_exists: user ? true : false,
                 success: 1,
                 errors: [],
-                message: userExists ? "Login Successfully" : "Otp Verified successfully"
+                message: user ? "Login Successfully" : "Otp Verified successfully"
             })
         } else {
             return res.json({
