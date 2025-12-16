@@ -187,11 +187,16 @@ exports.getChallenges = async (req, res) => {
                                         { $eq: ["$challenge", "$$challengeId"] },
                                         { $eq: ["$user", req.user._id] }
                                     ]
-                                }
+                                },
+                                $or: [
+                                    { leave_at: null },
+                                    { leave_at: { $exists: false } }
+                                ]
                             }
                         },
                         { $limit: 1 }
                     ],
+
                     as: "myParticipation"
                 }
             },
@@ -221,7 +226,11 @@ exports.getChallenges = async (req, res) => {
                     pipeline: [
                         {
                             $match: {
-                                $expr: { $eq: ["$challenge", "$$challengeId"] }
+                                $expr: { $eq: ["$challenge", "$$challengeId"] },
+                                $or: [
+                                    { leave_at: null },
+                                    { leave_at: { $exists: false } }
+                                ]
                             }
                         },
                         { $sort: { joined_at: 1 } },
