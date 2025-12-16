@@ -297,11 +297,13 @@ exports.joinChallenge = async (req, res) => {
 };
 exports.leaveChallenge = async (req, res) => {
     try {
+        const user_id = req.user._id;
         const { challenge_id } = req.params;
         await ChallengeParticipant.findOneAndUpdate({
             challenge: challenge_id,
             user: user_id,
         }, { $set: { leave_at: new Date(), } });
+        return res.status(500).json({ success: 1, message: "Challenge updated successfully" });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
