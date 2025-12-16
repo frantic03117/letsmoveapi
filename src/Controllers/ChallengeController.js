@@ -136,9 +136,14 @@ exports.getChallenges = async (req, res) => {
         if (type) query.type = type;
         if (isJoinedByMe !== undefined && req.user) {
             // Get all challenge ids the user has joined
-            const joined = await ChallengeParticipant
-                .find({ user: req.user._id })
-                .select("challenge");
+            const joined = await ChallengeParticipant.find({
+                user: req.user._id,
+                $or: [
+                    { leave_at: null },
+                    { leave_at: { $exists: false } }
+                ]
+            }).select("challenge");
+
 
             const joinedIds = joined.map(j => j.challenge);
 
@@ -290,6 +295,17 @@ exports.joinChallenge = async (req, res) => {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
+exports.leaveChallenge = async (req, res) => {
+    try {
+        const { challenge_id } = req.params;
+        await ChallengeParticipant.findOneAndUpdate({
+            challenge: challenge_id,
+            user: user_id,
+        }, { $set: { leave_at: new Date(), } });
+    } catch (err) {
+        return res.status(500).json({ success: 0, message: err.message });
+    }
+}
 
 // 📌 GET PARTICIPANTS
 // 📌 GET PARTICIPANTS WITH LOGS + PAGINATION

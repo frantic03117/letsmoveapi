@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { Auth } = require("../src/middleware/Auth");
-const { createChallenge, updateChallenge, deleteChallenge, getChallenges, joinChallenge, addLog, getLogs, getLeaderboard, getParticipants } = require("../src/Controllers/ChallengeController");
+const { createChallenge, updateChallenge, deleteChallenge, getChallenges, joinChallenge, addLog, getLogs, getLeaderboard, getParticipants, leaveChallenge } = require("../src/Controllers/ChallengeController");
 const Store = require("../src/middleware/Store");
 
 const router = Router();
@@ -30,6 +30,7 @@ router.get("/", Auth("Admin", "Trainer", "User"), getChallenges);
 //  User actions
 router.post("/join", Auth(), joinChallenge);
 router.get("/join", Auth(), getParticipants);
+router.post('/:challenge_id/leave', Auth('User'), leaveChallenge);
 router.post("/log", Auth(), Store('any').fields([
     {
         name: "image", maxCount: 4

@@ -19,6 +19,10 @@ const ChallengeParticipantSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    leave_at: {
+        type: Date,
+        default: null
+    },
     progress_value: {
         type: Number,
         default: 0

@@ -56,10 +56,10 @@ exports.getEvents = async (req, res) => {
             joinedEventIds = joins.map(j => String(j.event));
 
             if (isJoinedByMe != undefined) {
-                if (isJoined === "true") {
+                if (isJoinedByMe === "true") {
                     // Only joined challenges
                     filter["_id"] = { $in: joinedEventIds };
-                } else if (isJoined === "false") {
+                } else if (isJoinedByMe === "false") {
                     // Only not joined challenges
                     filter["_id"] = { $nin: joinedEventIds };
                 }
