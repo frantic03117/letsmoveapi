@@ -325,7 +325,12 @@ exports.getParticipants = async (req, res) => {
         const { id, page = 1, limit = 10 } = req.query;
 
         // Filters
-        let filter = {};
+        let filter = {
+            $or: [
+                { leave_at: null },
+                { leave_at: { $exists: false } }
+            ]
+        };
         if (id) filter.challenge = id;
 
         const skip = (page - 1) * limit;
