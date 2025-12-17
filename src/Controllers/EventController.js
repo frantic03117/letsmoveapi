@@ -36,6 +36,7 @@ exports.createEvent = async (req, res) => {
 }
 exports.getEvents = async (req, res) => {
     try {
+        // await EventJoin.collection.dropIndex('community_1_user_1');
         const { id, category, search, page = 1, limit = 10, isJoinedByMe } = req.query;
         const filter = {};
         const userId = req.user._id;
