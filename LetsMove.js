@@ -49,7 +49,7 @@ app.use('/api/v1/letsmove', adminRoutes);
 app.use('/api/v1/meal', mealRoutes);
 app.use('/api/v1/workout', workoutRoutes);
 app.use('/api/v1/user-activity', uactivity);
-app.user('/api/v1/goal', goalRoute);
+app.use('/api/v1/goal', goalRoute);
 
 
 server.listen(port, () => {
