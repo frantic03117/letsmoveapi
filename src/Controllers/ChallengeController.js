@@ -288,7 +288,7 @@ exports.joinChallenge = async (req, res) => {
         if (!user_id) {
             return res.status(500).json({ success: 0, message: "No user found" });
         }
-        const alreadyJoined = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id });
+        const alreadyJoined = await ChallengeParticipant.findOne({ challenge: challenge_id, user: user_id, leave_at: null });
         if (alreadyJoined) {
             return res.status(400).json({ success: 0, message: "Already joined this challenge" });
         }
