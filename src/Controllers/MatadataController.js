@@ -61,6 +61,7 @@ exports.getAllMatadata = async (req, res) => {
                 if (metaObj?.name?.toLowerCase() === "country") {
                     const countries = await Country.find({}, "name code dial_code flag_image").sort({ name: 1 }).lean();
                     metaObj.options = countries.map((c) => ({
+                        _id: c._id,
                         label: c.name,
                         value: c.code,
                         dial_code: c.dial_code,
