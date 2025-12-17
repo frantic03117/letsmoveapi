@@ -144,6 +144,7 @@ exports.getMatadataIsland = async (req, res) => {
                 if (metaObj?.name?.toLowerCase() === "island") {
                     const countries = await Country.find({ name: { $regex: "island", $options: 'i' } }, "name code dial_code flag_image").sort({ name: 1 }).lean();
                     metaObj.options = countries.map((c) => ({
+                        _id: c._id,
                         label: c.name,
                         value: c.code,
                         dial_code: c.dial_code,

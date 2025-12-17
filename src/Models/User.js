@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 
 const schema = new Schema({
     request_id: {
@@ -29,6 +29,11 @@ const schema = new Schema({
     email: {
         type: String,
         default: null
+    },
+    country: {
+        type: Types.ObjectId,
+        ref: "Country",
+        default: null,
     },
     country_code: {
         type: String,
