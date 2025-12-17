@@ -74,7 +74,7 @@ exports.verify_otp = async (req, res) => {
         const fields = ['mobile', 'otp', 'country_code'];
         const emptyFields = fields.filter(field => !req.body[field]);
         if (emptyFields.length > 0) {
-            return res.json({ success: 0, errors: 'The following fields are required:', fields: emptyFields });
+            return res.status(500).json({ success: 0, errors: 'The following fields are required:', fields: emptyFields });
         }
         const item = await OtpModel.findOne({ country_code, mobile: mobile, otp: otp, is_verified: false });
         if (item) {

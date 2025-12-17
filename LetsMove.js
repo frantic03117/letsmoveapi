@@ -34,6 +34,8 @@ const adminRoutes = require('./routes/adminAuthRoutes');
 const mealRoutes = require('./routes/mealRoutes');
 const workoutRoutes = require('./routes/workoutRoute');
 const uactivity = require('./routes/UserActivity');
+const goalRoute = require('./routes/dailyGoal.route');
+
 app.use('/api/v1/matadata', mroutes);
 app.use('/api/v1/banner', bannerRoutes);
 app.use('/api/v1/user', userroutes);
@@ -47,6 +49,7 @@ app.use('/api/v1/letsmove', adminRoutes);
 app.use('/api/v1/meal', mealRoutes);
 app.use('/api/v1/workout', workoutRoutes);
 app.use('/api/v1/user-activity', uactivity);
+app.user('/api/v1/goal', goalRoute);
 
 
 server.listen(port, () => {

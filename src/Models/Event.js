@@ -47,6 +47,7 @@ const schema = new Schema({
     description: String,
     terms: String,
     tags: [{ type: String, trim: true }],
+    organiser: String,
     author: {
         type: Schema.Types.ObjectId,
     },
