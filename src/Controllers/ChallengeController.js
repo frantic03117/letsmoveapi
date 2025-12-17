@@ -3,6 +3,7 @@ const ChallengeLog = require("../Models/ChallengeLog");
 const ChallengeParticipant = require("../Models/ChallengeParticipant");
 
 const mongoose = require("mongoose");
+const NotificationService = require("../Services/notification.service");
 // 📌 CREATE CHALLENGE
 exports.createChallenge = async (req, res) => {
     try {
@@ -30,6 +31,14 @@ exports.createChallenge = async (req, res) => {
             }));
         }
         const challenge = await Challenge.create(data);
+        NotificationService.send({
+            bulk: true,
+            title: "New challenge added",
+            message: "Checkout new challenge",
+            action: 'CREATED',
+            entity: challenge,
+            entityModel: "Challenge"
+        });
         return res.status(201).json({ success: 1, message: "Challenge created", data: challenge });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
@@ -293,12 +302,20 @@ exports.joinChallenge = async (req, res) => {
             return res.status(400).json({ success: 0, message: "Already joined this challenge" });
         }
 
+
         const participant = await ChallengeParticipant.create({
             challenge: challenge_id,
             user: user_id,
             joined_at: new Date(),
         });
-
+        NotificationService.send({
+            users: [user_id],
+            title: "New challenge accepted",
+            message: "Challenge accepted",
+            action: 'JOINED',
+            entity: participant,
+            entityModel: "ChallengeParticipant"
+        });
         return res.status(201).json({ success: 1, message: "Challenge joined", data: participant });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
@@ -322,8 +339,15 @@ exports.leaveChallenge = async (req, res) => {
             {
                 $set: { leave_at: new Date() }
             }
-        );
-
+        ).populate('challenge')
+        NotificationService.send({
+            users: [user_id],
+            title: "challenge left",
+            message: updated?.challenge?.title + "Challenge left",
+            action: 'LEAVE',
+            entity: updated,
+            entityModel: "ChallengeParticipant"
+        });
         return res.status(200).json({ success: 1, message: "Challenge updated successfully", updated });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
@@ -461,7 +485,14 @@ exports.addLog = async (req, res) => {
         participant.progress_value += Number(value);
         participant.progress_unit = findChallenge.target_unit;
         await participant.save();
-
+        NotificationService.send({
+            users: [user_id],
+            title: "challenge left",
+            message: value + " " + findChallenge.target_unit + " added to" + findChallenge?.title + " challenge",
+            action: 'LOG',
+            entity: log,
+            entityModel: "ChallengeLog"
+        });
         return res.status(201).json({
             success: 1,
             message: "Log added",
