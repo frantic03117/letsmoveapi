@@ -189,6 +189,14 @@ exports.joinEvent = async (req, res) => {
             return res.status(400).json({ success: 0, message: "Already joined this event" });
         }
         const join = await EventJoin.create({ event: id, user: userId });
+        NotificationService.send({
+            users: [userId],
+            title: "Event Joined",
+            message: 'Event joined successfully',
+            action: "JOINED",
+            entity: join,
+            entityModel: "EventJoin"
+        });
         await EventModel.findByIdAndUpdate(id, { $inc: { members_count: 1 } }, { new: true });
         return res.status(201).json({
             success: 1,
@@ -213,8 +221,15 @@ exports.leaveEvent = async (req, res) => {
             return res.status(404).json({ success: 0, message: "You are not a member of this community" });
         }
 
-        await EventModel.findByIdAndUpdate(id, { $inc: { members_count: -1 } });
-
+        const left = await EventModel.findByIdAndUpdate(id, { $inc: { members_count: -1 } });
+        NotificationService.send({
+            users: [req.user._id],
+            title: "Event left",
+            message: 'Event left successfully',
+            action: "LEAVE",
+            entity: left,
+            entityModel: "EventJoin"
+        });
         return res.status(200).json({
             success: 1,
             message: "🚪 Left event successfully",

@@ -7,6 +7,7 @@ const CommunityLike = require("../Models/CommunityLike");
 const CommunityComment = require("../Models/CommunityComment");
 const CommunityShare = require("../Models/CommunityShare");
 const CommunityJoin = require("../Models/CommunityJoin");
+const NotificationService = require("../Services/notification.service");
 
 // Create new community post
 exports.createCommunity = async (req, res) => {
@@ -56,7 +57,14 @@ exports.createCommunity = async (req, res) => {
         });
 
         await post.save();
-
+        NotificationService.send({
+            bulk: true,
+            title: "New Community",
+            message: title + " community added.",
+            action: "CREATED",
+            entity: post,
+            entityModel: "Community"
+        });
         return res.status(201).json({
             success: 1,
             message: " Community post created successfully!",
@@ -290,9 +298,16 @@ exports.toggleLike = async (req, res) => {
             return res.json({ success: 1, message: "Unliked" });
         }
 
-        await CommunityLike.create({ community: id, user: userId });
+        const liked = await CommunityLike.create({ community: id, user: userId });
         await Community.findByIdAndUpdate(id, { $inc: { likes_count: 1 } });
-
+        NotificationService.send({
+            bulk: true,
+            title: "Community" + existing ? "Unliked" : 'Liked',
+            message: "Community" + existing ? "Unliked" : 'Liked',
+            action: existing ? "UNLIKED" : 'LIKED',
+            entity: liked,
+            entityModel: "CommunityLike"
+        });
         return res.json({ success: 1, message: " Liked" });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
@@ -312,7 +327,14 @@ exports.addComment = async (req, res) => {
             parent_comment: parent_comment || null,
             content,
         });
-
+        NotificationService.send({
+            bulk: true,
+            title: "Comment on community",
+            message: content,
+            action: 'COMMENT',
+            entity: comment,
+            entityModel: "CommunityComment"
+        });
         await Community.findByIdAndUpdate(id, { $inc: { comments_count: 1 } });
 
         return res.status(201).json({ success: 1, data: comment });
