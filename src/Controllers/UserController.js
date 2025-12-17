@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { default: mongoose } = require("mongoose");
 const User = require('../Models/User');
 const OtpModel = require('../Models/Otp');
+const NotificationService = require('../Services/notification.service');
 // async function generateUniqueSlug(name) {
 //     const baseSlug = name
 //         .toLowerCase()
@@ -80,7 +81,7 @@ exports.verify_otp = async (req, res) => {
         if (item) {
             await OtpModel.updateOne({ country_code, mobile: mobile }, { $set: { is_verified: true } });
             let token;
-            let user = await User.findOne({ country_code, mobile });
+            let user = await User.findOne({ country_code, mobile, role: "User" });
             if (user) {
                 if (user?.is_deleted) {
                     return res.json({ data: [], success: 0, message: 'Account deleted' })
@@ -136,6 +137,14 @@ exports.update_profile = async (req, res) => {
             data['profile_image'] = req.files.profile_image[0].path
         }
         const userdata = await User.findOneAndUpdate({ _id: id }, { $set: data }, { new: true });
+        NotificationService.send({
+            users: [id],
+            title: "User profile Updation",
+            message: 'Profile Updated Successfully',
+            action: "UPDATED",
+            entity: userdata,
+            entityModel: "User"
+        });
         return res.json({
             data: userdata,
             success: 1,
@@ -158,7 +167,7 @@ exports.user_list = async (req, res) => {
             role: { $nin: ["Admin", "Employee"] },
             is_deleted: false
         };
-
+        // await User.updateMany(fdata, { role: "User" })
         const {
             type,
             keyword,
@@ -269,6 +278,7 @@ exports.user_list = async (req, res) => {
 
         const totaldocs = await User.countDocuments(fdata);
         const totalPage = Math.ceil(totaldocs / perPage);
+
         const pagination = {
             page: parseInt(page),
             perPage: parseInt(perPage),
@@ -355,6 +365,14 @@ exports.store_profile = async (req, res) => {
             });
         }
         const resp = await User.create(data);
+        NotificationService.send({
+            users: [resp?._id],
+            title: "Account Created Successfully",
+            message: 'Your account has been created successfully',
+            action: "CREATED",
+            entity: resp,
+            entityModel: "User"
+        });
         const token = jwt.sign({ user: { _id: resp._id } }, SECRET_KEY, { expiresIn: "1d" });
         return res.json({ success: 1, token, message: "User created successfully", data: resp });
     } catch (err) {

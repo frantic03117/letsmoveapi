@@ -1,6 +1,7 @@
 const EventModel = require("../Models/Event");
 const EventJoin = require("../Models/EventJoin");
 const path = require("path");
+const NotificationService = require("../Services/notification.service");
 exports.createEvent = async (req, res) => {
     try {
 
@@ -25,6 +26,14 @@ exports.createEvent = async (req, res) => {
         data['files'] = files;
         const resp = await EventModel({ ...data })
         await resp.save();
+        NotificationService.send({
+            bulk: true,
+            title: "New Event created",
+            message: resp.title,
+            action: "CREATED",
+            entity: resp,
+            entityModel: "Event"
+        });
         return res.status(201).json({
             success: 1,
             message: "Event post created successfully!",

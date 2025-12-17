@@ -67,7 +67,7 @@ const schema = new Schema({
     role: {
         type: String,
         enum: ['User', 'Trainer', 'Employee', 'Admin', 'SubAdmin'],
-        default: null
+        default: 'User'
     },
     roles: {
         type: Schema.Types.ObjectId,
