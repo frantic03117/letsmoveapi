@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config()
 const cors = require('cors');
-const mongourl = "mongodb+srv://franticnoida2016:franticnoida2016@cluster0.9n1kpyn.mongodb.net/letsmove";
+const mongourl = "mongodb+srv://khan03117:khan03117@cluster0.qu09pn9.mongodb.net/letsmove";
 mongoose.connect(mongourl);
 const database = mongoose.connection;
 database.on('error', (error) => {
