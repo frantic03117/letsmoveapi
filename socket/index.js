@@ -5,21 +5,16 @@ const events = require('events');
 const fs = require('fs');
 const { WebSocketServer, WebSocket } = require("ws");
 require('dotenv').config();
-const productMode = process.env.NODE_PRODUCTION_MODE ?? 0;
-let options = {}
-if (productMode === 1) {
-    options = {
-        key: fs.readFileSync('/etc/letsencrypt/live/frush.franticpro.com/privkey.pem', 'utf-8'),
-        cert: fs.readFileSync('/etc/letsencrypt/live/frush.franticpro.com/fullchain.pem', 'utf-8'),
-    };
-} else {
-    options = {
-        key: fs.readFileSync('./ssl/private.pem'),
-        cert: fs.readFileSync('./ssl/certificate.pem')
-    }
-}
+const productMode = process.env.NODE_PRODUCTION_MODE;
 
-
+// const options = {
+//     key: fs.readFileSync('./ssl/private.pem'),
+//     cert: fs.readFileSync('./ssl/certificate.pem')
+// }
+const options = {
+    key: fs.readFileSync('/etc/letsencrypt/live/frush.franticpro.com/privkey.pem', 'utf-8'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/frush.franticpro.com/fullchain.pem', 'utf-8'),
+};
 
 const server = https.createServer(options, app);
 const wss = new WebSocketServer({ server });
