@@ -254,26 +254,69 @@ exports.user_list = async (req, res) => {
             }
         }
         const resp = await User.aggregate([
+            // 🔍 Filter
             { $match: fdata },
+
+            // 🎯 Populate Goal
             {
                 $lookup: {
-                    from: "settings",          // collection name
-                    localField: "goal", // field in User
-                    foreignField: "_id",        // matching field in Settings
+                    from: "settings",
+                    localField: "goal",
+                    foreignField: "_id",
                     as: "goal_data"
                 }
             },
-
-            // Convert array → single object
             {
                 $unwind: {
                     path: "$goal_data",
                     preserveNullAndEmptyArrays: true
                 }
             },
+
+            // 🌍 Populate Country
+            {
+                $lookup: {
+                    from: "countries",
+                    localField: "country",
+                    foreignField: "_id",
+                    as: "country_data"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$country_data",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+
+            // 🏝 Populate Island
+            {
+                $lookup: {
+                    from: "islands",
+                    localField: "island",
+                    foreignField: "_id",
+                    as: "island_data"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$island_data",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+
+            // 🔃 Sort & Pagination
             { $sort: { created_at: -1 } },
             { $skip: skip },
             { $limit: parseInt(perPage) },
+
+            // 🧹 Optional: shape final response
+            {
+                $project: {
+                    password: 0,
+                    otp: 0
+                }
+            }
         ]);
 
         const totaldocs = await User.countDocuments(fdata);
