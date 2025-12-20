@@ -512,7 +512,7 @@ exports.getLogs = async (req, res) => {
         const filter = {};
         if (challenge_id) filter.challenge = challenge_id;
         if (user_id) filter.user = user_id;
-        if (!user_id) {
+        if (req.user && req.user.role == "User") {
             filter.user = req.user._id
         }
         const logs = await ChallengeLog.find(filter).populate([

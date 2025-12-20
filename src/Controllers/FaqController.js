@@ -26,8 +26,8 @@ const getAll = async (req, res) => {
     return res.json({ data: items, errors: [], filter, success: 1, message: "Fetched Faqs successfully.", pagination });
 }
 const destroy = async (req, res) => {
-    const { _id } = req.params;
-    await FaqModel.deleteOne({ _id: _id }).then((resp) => {
+    const { id } = req.params;
+    await FaqModel.deleteOne({ _id: id }).then((resp) => {
         return res.json({ data: [], errors: [], success: 1, message: " Faq deleted successfully." });
     })
 }
