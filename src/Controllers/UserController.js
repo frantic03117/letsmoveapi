@@ -288,6 +288,21 @@ exports.user_list = async (req, res) => {
                     preserveNullAndEmptyArrays: true
                 }
             },
+            //island
+            {
+                $lookup: {
+                    from: "countries",
+                    localField: "island",
+                    foreignField: "_id",
+                    as: "island_data"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$island_data",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
 
             // 🏝 Populate Island
             {
