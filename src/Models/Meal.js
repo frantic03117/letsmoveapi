@@ -10,6 +10,11 @@ const fileSchema = new mongoose.Schema({
 const MealSchema = new mongoose.Schema(
     {
         slug: String,
+        meal_category: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "setting"
+
+        },
         title: {
             type: String
         },
@@ -55,6 +60,7 @@ const MealSchema = new mongoose.Schema(
             type: Number,
             default: 0,
         },
+        tags: [String],
         is_active: {
             type: Boolean,
             default: true,

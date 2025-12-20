@@ -510,10 +510,26 @@ exports.getLogs = async (req, res) => {
     try {
         const { challenge_id, user_id } = req.query;
         const filter = {};
-        if (challenge_id) filter.challenge_id = challenge_id;
-        if (user_id) filter.user_id = user_id;
-        const logs = await ChallengeLog.find(filter).sort({ log_date: -1 });
-        return res.json({ success: 1, data: logs });
+        if (challenge_id) filter.challenge = challenge_id;
+        if (user_id) filter.user = user_id;
+        if (!user_id) {
+            filter.user = req.user._id
+        }
+        const logs = await ChallengeLog.find(filter).populate([
+            {
+                path: "user",
+                select: "first_name last_name profile_image"
+            },
+            {
+                path: "verified_by",
+                select: "first_name last_name"
+            },
+            {
+                path: "challenge",
+                select: "title"
+            }
+        ]).sort({ log_date: -1 })
+        return res.json({ success: 1, data: logs, filter });
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
