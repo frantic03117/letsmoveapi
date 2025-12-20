@@ -538,62 +538,85 @@ exports.getLogs = async (req, res) => {
 
 // 📌 LEADERBOARD
 
-
-
 exports.getLeaderboard = async (req, res) => {
     try {
         const { challenge_id } = req.params;
         const { type = "overall" } = req.query;
 
-        const match = {
-            challenge: new mongoose.Types.ObjectId(challenge_id),
+        // 🔐 Participant filter
+        const participantMatch = {
+            challenge: new mongoose.Types.ObjectId(challenge_id)
+        };
+
+        // User-only → self
+        if (req.user.role === "user") {
+            participantMatch.user = new mongoose.Types.ObjectId(req.user._id);
+        }
+
+        // 📅 Log date filters
+        const logMatch = {
             verified: true
         };
 
-        // 📅 Date filters
         if (type === "daily") {
             const start = new Date();
             start.setHours(0, 0, 0, 0);
-            match.log_date = { $gte: start };
+            logMatch.log_date = { $gte: start };
         }
 
         if (type === "weekly") {
             const start = new Date();
             start.setDate(start.getDate() - 7);
-            match.log_date = { $gte: start };
-        }
-
-        // 🔐 User role filter
-        if (req.user.role === "user") {
-            match.user = new mongoose.Types.ObjectId(req.user._id);
+            logMatch.log_date = { $gte: start };
         }
 
         const pipeline = [
-            { $match: match },
+            // 1️⃣ All participants
+            { $match: participantMatch },
 
-            // 🔢 Sum progress user-wise
+            // 2️⃣ Lookup logs
             {
-                $group: {
-                    _id: "$user",
-                    total_progress: { $sum: "$value" }
+                $lookup: {
+                    from: "challengelogs",
+                    let: { participantId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ["$participant", "$$participantId"]
+                                },
+                                ...logMatch
+                            }
+                        }
+                    ],
+                    as: "logs"
                 }
             },
 
-            // 🏆 Sort descending
-            { $sort: { total_progress: -1 } },
+            // 3️⃣ Sum verified logs
+            {
+                $addFields: {
+                    total_progress: {
+                        $ifNull: [{ $sum: "$logs.value" }, 0]
+                    }
+                }
+            },
 
-            // 👤 Lookup user
+            // 4️⃣ Lookup user
             {
                 $lookup: {
                     from: "users",
-                    localField: "_id",
+                    localField: "user",
                     foreignField: "_id",
                     as: "user"
                 }
             },
             { $unwind: "$user" },
 
-            // 🧮 Rank calculation
+            // 5️⃣ Sort by progress
+            { $sort: { total_progress: -1 } },
+
+            // 6️⃣ Rank calculation
             {
                 $setWindowFields: {
                     sortBy: { total_progress: -1 },
@@ -603,7 +626,7 @@ exports.getLeaderboard = async (req, res) => {
                 }
             },
 
-            // 🎯 Shape response
+            // 7️⃣ Shape response
             {
                 $project: {
                     _id: 0,
@@ -612,15 +635,19 @@ exports.getLeaderboard = async (req, res) => {
                     last_name: "$user.last_name",
                     profile_img: "$user.profile_image",
                     total_progress: 1,
+                    progress_unit: "$progress_unit",
                     rank: 1
                 }
             }
         ];
 
-        let leaderboard = await ChallengeLog.aggregate(pipeline);
+        let leaderboard = await ChallengeParticipant.aggregate(pipeline);
+
+        // Admin / Coach → top 20
         if (req.user.role !== "user") {
             leaderboard = leaderboard.slice(0, 20);
         }
+
         return res.json({
             success: 1,
             type,
