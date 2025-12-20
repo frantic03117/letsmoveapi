@@ -478,13 +478,14 @@ exports.addLog = async (req, res) => {
             unit: findChallenge.target_unit,
             note,
             log_date: new Date(),
-            media   // <-- saving uploaded media here
+            media,
+            verified: false
         });
 
         // Update participant progress
-        participant.progress_value += Number(value);
-        participant.progress_unit = findChallenge.target_unit;
-        await participant.save();
+        // participant.progress_value += Number(value);
+        // participant.progress_unit = findChallenge.target_unit;
+        // await participant.save();
         NotificationService.send({
             users: [user_id],
             title: "challenge left",
@@ -536,16 +537,158 @@ exports.getLogs = async (req, res) => {
 };
 
 // 📌 LEADERBOARD
+
+
+
 exports.getLeaderboard = async (req, res) => {
     try {
         const { challenge_id } = req.params;
-        const leaderboard = await ChallengeParticipant.find({ challenge_id })
-            .populate("user", "first_name profile_img")
-            .sort({ total_progress: -1 })
-            .limit(20);
+        const { type = "overall" } = req.query;
 
-        return res.json({ success: 1, data: leaderboard });
+        const match = {
+            challenge: new mongoose.Types.ObjectId(challenge_id),
+            verified: true
+        };
+
+        // 📅 Date filters
+        if (type === "daily") {
+            const start = new Date();
+            start.setHours(0, 0, 0, 0);
+            match.log_date = { $gte: start };
+        }
+
+        if (type === "weekly") {
+            const start = new Date();
+            start.setDate(start.getDate() - 7);
+            match.log_date = { $gte: start };
+        }
+
+        // 🔐 User role filter
+        if (req.user.role === "user") {
+            match.user = new mongoose.Types.ObjectId(req.user._id);
+        }
+
+        const pipeline = [
+            { $match: match },
+
+            // 🔢 Sum progress user-wise
+            {
+                $group: {
+                    _id: "$user",
+                    total_progress: { $sum: "$value" }
+                }
+            },
+
+            // 🏆 Sort descending
+            { $sort: { total_progress: -1 } },
+
+            // 👤 Lookup user
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "user"
+                }
+            },
+            { $unwind: "$user" },
+
+            // 🧮 Rank calculation
+            {
+                $setWindowFields: {
+                    sortBy: { total_progress: -1 },
+                    output: {
+                        rank: { $rank: {} }
+                    }
+                }
+            },
+
+            // 🎯 Shape response
+            {
+                $project: {
+                    _id: 0,
+                    user_id: "$user._id",
+                    first_name: "$user.first_name",
+                    last_name: "$user.last_name",
+                    profile_img: "$user.profile_image",
+                    total_progress: 1,
+                    rank: 1
+                }
+            }
+        ];
+
+        let leaderboard = await ChallengeLog.aggregate(pipeline);
+        if (req.user.role !== "user") {
+            leaderboard = leaderboard.slice(0, 20);
+        }
+        return res.json({
+            success: 1,
+            type,
+            data: leaderboard
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            success: 0,
+            message: err.message
+        });
+    }
+};
+
+
+exports.verifyLog = async (req, res) => {
+    try {
+        const { challenge_log_id } = req.params;
+        let id = challenge_log_id;
+        const { verified } = req.body;
+
+        const log = await ChallengeLog.findById(id);
+        if (!log) {
+            return res.status(404).json({ success: 0, message: "Log not found" });
+        }
+
+        const participant = await ChallengeParticipant.findById(log.participant);
+        if (!participant) {
+            return res.status(404).json({ success: 0, message: "Participant not found" });
+        }
+
+        // 🧠 CASE 1: Already verified → do nothing
+        if (log.verified === verified) {
+            return res.json({
+                success: 1,
+                message: "No changes required"
+            });
+        }
+
+        // 🟢 VERIFY → ADD PROGRESS
+        if (verified === true) {
+            participant.progress_value += Number(log.value);
+        }
+
+        // 🔴 REJECT (was verified earlier) → REMOVE PROGRESS
+        if (verified === false && log.verified === true) {
+            participant.progress_value -= Number(log.value);
+            if (participant.progress_value < 0) {
+                participant.progress_value = 0;
+            }
+        }
+
+        participant.progress_unit = log.unit;
+        await participant.save();
+
+        // Update log status
+        log.verified = verified;
+        log.verified_by = req.user._id;
+        log.verified_at = verified ? new Date() : null;
+        await log.save();
+
+        return res.json({
+            success: 1,
+            message: verified ? "Log verified" : "Log rejected"
+        });
+
     } catch (err) {
         return res.status(500).json({ success: 0, message: err.message });
     }
 };
+

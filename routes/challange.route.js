@@ -1,6 +1,6 @@
 const { Router } = require("express");
 const { Auth } = require("../src/middleware/Auth");
-const { createChallenge, updateChallenge, deleteChallenge, getChallenges, joinChallenge, addLog, getLogs, getLeaderboard, getParticipants, leaveChallenge } = require("../src/Controllers/ChallengeController");
+const { createChallenge, updateChallenge, deleteChallenge, getChallenges, joinChallenge, addLog, getLogs, getLeaderboard, getParticipants, leaveChallenge, verifyLog } = require("../src/Controllers/ChallengeController");
 const Store = require("../src/middleware/Store");
 
 const router = Router();
@@ -40,6 +40,7 @@ router.post("/log", Auth(), Store('any').fields([
     }
 ]), addLog);
 router.get("/log", Auth("User", "Admin"), getLogs);
+router.post("/log/verify/:challenge_log_id", Auth("Admin"), verifyLog);
 
 //  Leaderboard
 router.get("/:challenge_id/leaderboard", Auth("User", "Admin"), getLeaderboard);
