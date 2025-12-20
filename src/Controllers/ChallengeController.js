@@ -571,10 +571,14 @@ exports.getLeaderboard = async (req, res) => {
         }
 
         const pipeline = [
-            // 1️⃣ All participants
-            { $match: participantMatch },
+            // 1️⃣ All participants of challenge
+            {
+                $match: {
+                    challenge: new mongoose.Types.ObjectId(challenge_id)
+                }
+            },
 
-            // 2️⃣ Lookup logs
+            // 2️⃣ Lookup verified logs
             {
                 $lookup: {
                     from: "challengelogs",
@@ -582,10 +586,10 @@ exports.getLeaderboard = async (req, res) => {
                     pipeline: [
                         {
                             $match: {
+                                verified: true,
                                 $expr: {
                                     $eq: ["$participant", "$$participantId"]
-                                },
-                                ...logMatch
+                                }
                             }
                         }
                     ],
@@ -593,30 +597,40 @@ exports.getLeaderboard = async (req, res) => {
                 }
             },
 
-            // 3️⃣ Sum verified logs
+            // 3️⃣ Sum logs per participant
             {
                 $addFields: {
-                    total_progress: {
+                    participant_progress: {
                         $ifNull: [{ $sum: "$logs.value" }, 0]
                     }
                 }
             },
 
-            // 4️⃣ Lookup user
+            // 🔴 🔴 🔴 FIX IS HERE 🔴 🔴 🔴
+            // 4️⃣ GROUP BY USER (IMPORTANT)
+            {
+                $group: {
+                    _id: "$user",
+                    total_progress: { $sum: "$participant_progress" },
+                    progress_unit: { $first: "$progress_unit" }
+                }
+            },
+
+            // 5️⃣ Lookup user details
             {
                 $lookup: {
                     from: "users",
-                    localField: "user",
+                    localField: "_id",
                     foreignField: "_id",
                     as: "user"
                 }
             },
             { $unwind: "$user" },
 
-            // 5️⃣ Sort by progress
+            // 6️⃣ Sort
             { $sort: { total_progress: -1 } },
 
-            // 6️⃣ Rank calculation
+            // 7️⃣ Rank
             {
                 $setWindowFields: {
                     sortBy: { total_progress: -1 },
@@ -626,7 +640,7 @@ exports.getLeaderboard = async (req, res) => {
                 }
             },
 
-            // 7️⃣ Shape response
+            // 8️⃣ Final shape
             {
                 $project: {
                     _id: 0,
@@ -635,11 +649,12 @@ exports.getLeaderboard = async (req, res) => {
                     last_name: "$user.last_name",
                     profile_img: "$user.profile_image",
                     total_progress: 1,
-                    progress_unit: "$progress_unit",
+                    progress_unit: 1,
                     rank: 1
                 }
             }
         ];
+
 
         let leaderboard = await ChallengeParticipant.aggregate(pipeline);
 
