@@ -19,6 +19,7 @@ exports.createActivity = async (req, res) => {
             return res.status(500).json({ success: 0, message: "Activity type is required" + accepted_types.join(',') });
         }
         const data = {
+            ...req.body,
             user: user_id,
             activity_type: activity_type,
             activity_value: req.body.activity_value,

@@ -8,7 +8,11 @@ const useractivityschema = new Schema({
     activity_type: String,
     activity_value: String,
     activity_unit: String,
-    activity_date: Date
+    activity_date: Date,
+    start_time: Date,
+    end_time: Date,
+    duration: Number,
+    quality: Number
 }, { timestamps: true });
 
 
