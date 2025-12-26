@@ -104,7 +104,7 @@ exports.getMeals = async (req, res) => {
             if (findMtype) {
                 query.meal_type = findMtype._id
             } else {
-                return res.json({ success: 0, data: [], message: "not found", meal_type })
+                return res.json({ success: 0, data: [], message: "not found", meal_type, findMtype })
             }
 
         }
