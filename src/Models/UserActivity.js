@@ -22,7 +22,6 @@ useractivityschema.pre("save", function (next) {
         }
         const date = new Date(this.start_time);
         date.setUTCHours(0, 0, 0, 0);
-        this.activity_date = date;
         const durationMinutes =
             (this.end_time - this.start_time) / (1000 * 60);
         this.duration = Math.round(durationMinutes);
