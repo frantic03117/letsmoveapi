@@ -73,7 +73,21 @@ exports.getActivity = async (req, res) => {
     const resp = await UserActivity.find(fdata).sort({ activity_date: -1 });
     const totalResult = await UserActivity.aggregate([
         { $match: fdata },
-        { $group: { _id: null, total_value: { $sum: { $toInt: "$activity_value" } } } }
+        {
+            $group: {
+                _id: null,
+                total_value: {
+                    $sum: {
+                        $convert: {
+                            input: "$activity_value",
+                            to: "int",
+                            onError: 0,
+                            onNull: 0
+                        }
+                    }
+                }
+            }
+        }
     ]);
 
     const totalValue = totalResult[0]?.total_value || 0;
@@ -84,7 +98,8 @@ exports.getActivity = async (req, res) => {
         message: "List of activity",
         data: resp,
         total: totalValue,
-        unit: resp[0].activity_unit
+        unit: resp[0].activity_unit,
+        fdata
     });
 
 
