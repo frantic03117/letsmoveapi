@@ -27,8 +27,12 @@ useractivityschema.pre("save", function (next) {
         date.setHours(0, 0, 0, 0);
         this.activity_date = date;
 
+
         // Calculate duration in minutes
         this.duration = Math.round(
+            (this.end_time - this.start_time) / (1000 * 60)
+        );
+        this.activity_value = Math.round(
             (this.end_time - this.start_time) / (1000 * 60)
         );
     }

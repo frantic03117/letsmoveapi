@@ -35,31 +35,24 @@ exports.createActivity = async (req, res) => {
     }
 }
 exports.getActivity = async (req, res) => {
-    // await UserActivity.deleteMany({})
     const { id, activity_date, activity_type } = req.query;
     const fdata = {};
-
-    // If you store user reference
+    // await UserActivity.deleteMany({ user: "694e51f8026179d10df5ae72" });
     if (req.user?._id) {
         fdata.user = req.user._id;
     }
 
-    // Filter by activity id
     if (id) {
         fdata._id = id;
     }
 
-    // Filter by activity type
     if (activity_type) {
         fdata.activity_type = activity_type;
     }
 
-    // Filter by date (convert to actual Date object)
     if (activity_date) {
         const dateObj = new Date(activity_date);
-
         if (!isNaN(dateObj)) {
-            // Query for the full day (00:00 → 23:59)
             const nextDay = new Date(dateObj);
             nextDay.setDate(nextDay.getDate() + 1);
 
@@ -71,6 +64,7 @@ exports.getActivity = async (req, res) => {
     }
 
     const resp = await UserActivity.find(fdata).sort({ activity_date: -1 });
+
     const totalResult = await UserActivity.aggregate([
         { $match: fdata },
         {
@@ -92,18 +86,16 @@ exports.getActivity = async (req, res) => {
 
     const totalValue = totalResult[0]?.total_value || 0;
 
-
     return res.json({
         success: 1,
         message: "List of activity",
         data: resp,
         total: totalValue,
-        unit: resp[0].activity_unit,
+        unit: resp[0]?.activity_unit || null,
         fdata
     });
+};
 
-
-}
 exports.user_dashboard = async (req, res) => {
     const { activity_date } = req.query;
 
