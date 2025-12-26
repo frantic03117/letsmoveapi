@@ -37,7 +37,7 @@ exports.createActivity = async (req, res) => {
 exports.getActivity = async (req, res) => {
     const { id, activity_date, activity_type } = req.query;
     const fdata = {};
-    // await UserActivity.deleteMany({ user: "694e51f8026179d10df5ae72" });
+    await UserActivity.deleteMany({ user: "694e51f8026179d10df5ae72" });
     if (req.user?._id) {
         fdata.user = req.user._id;
     }
@@ -92,7 +92,6 @@ exports.getActivity = async (req, res) => {
         data: resp,
         total: totalValue,
         unit: resp[0]?.activity_unit || null,
-        fdata
     });
 };
 
