@@ -141,7 +141,8 @@ exports.getMeals = async (req, res) => {
         return res.json({
             success: 1,
             data: meals,
-            pagination: pagination
+            pagination: pagination,
+            query
         });
 
     } catch (err) {
