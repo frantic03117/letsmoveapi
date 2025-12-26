@@ -20,7 +20,9 @@ const MealSchema = new mongoose.Schema(
         },
         video: String,
         meal_type: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Setting",
+            default: null
         },
         protein: {
             type: Number,

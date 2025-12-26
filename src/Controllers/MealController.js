@@ -123,7 +123,7 @@ exports.getMeals = async (req, res) => {
         // ---------------------------
         // MAIN QUERY
         // ---------------------------
-        const meals = await Meal.find(query)
+        const meals = await Meal.find(query).populate('meal_type')
             .sort(sort)
             .skip(skip)
             .limit(Number(limit));
