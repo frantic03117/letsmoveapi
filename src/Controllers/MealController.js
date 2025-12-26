@@ -5,6 +5,7 @@
 
 const { default: mongoose } = require("mongoose");
 const Meal = require("../Models/Meal");
+const Setting = require("../Models/Setting");
 
 // ==============================
 exports.createMeal = async (req, res) => {
@@ -99,7 +100,13 @@ exports.getMeals = async (req, res) => {
         // ---------------------------
         if (id) query._id = id;
         if (meal_type) {
-            query.meal_type = new mongoose.Types.ObjectId(meal_type);
+            const findMtype = await Setting.findOne({ _id: meal_type });
+            if (findMtype) {
+                query.meal_type = findMtype._id
+            } else {
+                return res.json({ success: 0, data: [], message: "not found", meal_type })
+            }
+
         }
 
         if (service) query.service = service;
