@@ -124,11 +124,21 @@ exports.user_dashboard = async (req, res) => {
         {
             $group: {
                 _id: "$activity_type",
-                total_value: { $sum: { $toInt: "$activity_value" } },
+                total_value: {
+                    $sum: {
+                        $convert: {
+                            input: "$activity_value",
+                            to: "double",
+                            onError: 0,
+                            onNull: 0
+                        }
+                    }
+                },
                 unit: { $first: "$activity_unit" }
             }
         }
     ]);
+
 
     // Convert array → object for easy frontend use
     const dashboard = {
