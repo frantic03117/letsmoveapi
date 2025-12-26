@@ -3,6 +3,7 @@
 // ==============================
 // CREATE MEAL
 
+const { default: mongoose } = require("mongoose");
 const Meal = require("../Models/Meal");
 
 // ==============================
@@ -97,7 +98,9 @@ exports.getMeals = async (req, res) => {
         // FILTERS
         // ---------------------------
         if (id) query._id = id;
-        if (meal_type) query.meal_type = meal_type;
+        if (meal_type) {
+            query.meal_type = new mongoose.Types.ObjectId(meal_type);
+        }
 
         if (service) query.service = service;
 
